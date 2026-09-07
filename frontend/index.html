@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MediPredict AI — Multi-Modal Clinical Intelligence Platform</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 8px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; }
+    @media print {
+      body * { visibility: hidden; }
+      #printable-report, #printable-report * { visibility: visible; }
+      #printable-report { position: absolute; left: 0; top: 0; width: 100%; }
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col antialiased">
+
+  <div class="bg-amber-500 text-amber-950 px-4 py-2 text-xs sm:text-sm font-semibold text-center border-b border-amber-600 flex items-center justify-center gap-2 shadow-sm sticky top-0 z-50">
+    <i data-lucide="alert-triangle" class="w-4 h-4 flex-shrink-0"></i>
+    <span><strong>EDUCATIONAL TOOL ONLY:</strong> Not medical advice. For emergencies, call 911 or visit your nearest hospital emergency room.</span>
+  </div>
+
+  <header class="bg-white border-b border-slate-200 sticky top-9 z-40 shadow-xs">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-col md:flex-row items-center justify-between gap-3">
+      <div class="flex items-center gap-2.5">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-teal-600 to-cyan-500 flex items-center justify-center text-white shadow-md shadow-teal-500/20">
+          <i data-lucide="activity" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <h1 class="text-xl font-extrabold bg-gradient-to-r from-teal-700 via-cyan-700 to-slate-900 bg-clip-text text-transparent leading-none">
+            MediPredict AI Platform
+          </h1>
+          <p class="text-xs text-slate-500 mt-0.5 font-medium">Multi-Modal Clinical Intelligence Engine</p>
+        </div>
+      </div>
+
+      <nav class="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl w-full md:w-auto overflow-x-auto custom-scrollbar">
+        <button data-tab="tab-symptoms" class="nav-tab px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap bg-white text-teal-900 shadow-xs">
+          <i data-lucide="stethoscope" class="w-4 h-4 text-teal-600"></i><span>Symptom Checker</span>
+        </button>
+        <button data-tab="tab-eye" class="nav-tab px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 transition flex items-center gap-1.5 whitespace-nowrap">
+          <i data-lucide="eye" class="w-4 h-4 text-blue-600"></i><span>Eye Scan AI</span>
+        </button>
+        <button data-tab="tab-diabetes" class="nav-tab px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 transition flex items-center gap-1.5 whitespace-nowrap">
+          <i data-lucide="droplet" class="w-4 h-4 text-rose-500"></i><span>Diabetes Risk</span>
+        </button>
+        <button data-tab="tab-stroke" class="nav-tab px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 transition flex items-center gap-1.5 whitespace-nowrap">
+          <i data-lucide="brain" class="w-4 h-4 text-purple-600"></i><span>Stroke Risk</span>
+        </button>
+        <button data-tab="tab-heart" class="nav-tab px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 transition flex items-center gap-1.5 whitespace-nowrap">
+          <i data-lucide="heart-pulse" class="w-4 h-4 text-red-500"></i><span>Heart Failure</span>
+        </button>
+        <button data-tab="tab-history" class="nav-tab px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 transition flex items-center gap-1.5 whitespace-nowrap">
+          <i data-lucide="database" class="w-4 h-4 text-slate-500"></i><span>Audit Log</span>
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <!-- TAB 1: SYMPTOM CHECKER -->
+    <div id="tab-symptoms" class="tab-pane grid grid-cols-1 lg:grid-cols-12 gap-6">
+      
+      <!-- LEFT (7 Cols) -->
+      <section class="lg:col-span-7 flex flex-col gap-5">
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 sm:p-6 flex flex-col">
+          
+          <div class="flex items-center justify-between mb-3">
+            <div>
+              <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                <i data-lucide="clipboard-list" class="w-5 h-5 text-teal-600"></i>
+                Clinical Symptom Intake
+              </h2>
+              <p class="text-xs text-slate-500 mt-0.5">Use Natural Language or search the checklist</p>
+            </div>
+            <span id="selected-badge-count" class="text-xs font-bold px-3 py-1 rounded-full bg-teal-100 text-teal-800">
+              0 selected
+            </span>
+          </div>
+
+          <!-- NLP FREE-TEXT BAR -->
+          <div class="mb-4 p-3 bg-slate-50 border border-slate-200 rounded-xl">
+            <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+              <i data-lucide="sparkles" class="w-3.5 h-3.5 text-teal-600"></i>
+              Describe Symptoms in Plain English:
+            </label>
+            <div class="flex gap-2">
+              <input 
+                type="text" 
+                id="nlp-input" 
+                placeholder="e.g., 'I have a throbbing headache, high fever, shivering and nausea since yesterday'..." 
+                class="flex-grow px-3.5 py-2 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+              >
+              <button id="nlp-extract-btn" class="px-3.5 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-lg transition flex items-center gap-1">
+                <span>Extract</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- QUICK PICKS -->
+          <div class="mb-4">
+            <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">Common Quick-Picks:</p>
+            <div class="flex flex-wrap gap-1.5" id="quick-picks-container"></div>
+          </div>
+
+          <!-- SEARCH -->
+          <div class="relative mb-3">
+            <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5"></i>
+            <input 
+              type="text" 
+              id="symptom-search" 
+              placeholder="Search across 132 clinical symptoms..."
+              class="w-full pl-10 pr-10 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition"
+            >
+            <button id="clear-search-btn" class="hidden absolute right-3 top-3 text-slate-400 hover:text-slate-600">
+              <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+          </div>
+
+          <!-- ACTIVE SELECTION -->
+          <div id="selected-chips-section" class="hidden mb-4 p-3 bg-teal-50/70 border border-teal-100 rounded-xl">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-bold text-teal-900 flex items-center gap-1.5">
+                <i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-teal-700"></i>
+                Active Symptoms:
+              </span>
+              <button id="clear-all-btn" class="text-[11px] font-semibold text-rose-600 hover:text-rose-700 hover:underline">
+                Clear All
+              </button>
+            </div>
+            <div class="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto custom-scrollbar" id="selected-chips-container"></div>
+          </div>
+
+          <!-- CHECKLIST -->
+          <div class="border border-slate-200 rounded-xl bg-slate-50/50 p-2 max-h-64 overflow-y-auto custom-scrollbar" id="symptoms-list">
+            <div class="flex items-center justify-center py-10 text-slate-400 text-sm gap-2">
+              <div class="w-4 h-4 border-2 border-teal-600 border-t-transparent rounded-full animate-spin"></div>
+              Loading symptoms catalog...
+            </div>
+          </div>
+
+          <!-- CTA -->
+          <div class="mt-5 pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <p class="text-xs text-slate-500 font-medium">Select one or more symptoms to evaluate.</p>
+            <button 
+              id="predict-btn" 
+              disabled
+              class="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-bold text-sm shadow-md shadow-teal-600/20 hover:shadow-lg hover:shadow-teal-600/30 transition flex items-center justify-center gap-2"
+            >
+              <i data-lucide="sparkles" class="w-4 h-4"></i>
+              <span>Evaluate Diagnosis & Triage</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- RIGHT RESULTS (5 Cols) -->
+      <section class="lg:col-span-5 flex flex-col gap-5">
+        
+        <div id="empty-state" class="bg-white rounded-2xl border border-dashed border-slate-300 p-8 flex flex-col items-center justify-center text-center text-slate-400 min-h-[420px]">
+          <div class="w-16 h-16 rounded-2xl bg-teal-50 text-teal-600 flex items-center justify-center mb-3.5 shadow-inner">
+            <i data-lucide="stethoscope" class="w-8 h-8"></i>
+          </div>
+          <h3 class="text-base font-bold text-slate-800">Ready for Clinical Evaluation</h3>
+          <p class="text-xs text-slate-500 max-w-xs mt-1.5 leading-relaxed">
+            Select symptoms or enter plain text on the left to generate differential rankings, XAI feature drivers, and follow-up triage questions.
+          </p>
+        </div>
+
+        <div id="loading-state" class="hidden bg-white rounded-2xl border border-slate-200 p-8 flex flex-col items-center justify-center text-center min-h-[420px] shadow-sm">
+          <div class="w-12 h-12 border-4 border-teal-600 border-t-transparent rounded-full animate-spin mb-4"></div>
+          <h3 class="text-sm font-bold text-slate-900">Evaluating Clinical Differentials...</h3>
+          <p class="text-xs text-slate-500 mt-1">Calculating decision forest class probabilities</p>
+        </div>
+
+        <div id="results-container" class="hidden flex flex-col gap-4">
+          
+          <!-- EMERGENCY RED FLAG BANNER (If Triggered) -->
+          <div id="emergency-banner" class="hidden p-4 rounded-xl bg-rose-50 border-2 border-rose-500 text-rose-950 shadow-md">
+            <div class="flex items-start gap-3">
+              <i data-lucide="alert-octagon" class="w-6 h-6 text-rose-600 flex-shrink-0 mt-0.5"></i>
+              <div>
+                <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase bg-rose-600 text-white">EMERGENCY RED-FLAG</span>
+                <h4 id="emergency-title" class="text-sm font-bold text-rose-950 mt-1"></h4>
+                <ul id="emergency-instructions" class="mt-2 space-y-1 text-xs text-rose-900 font-medium"></ul>
+                <div class="mt-3 flex gap-2">
+                  <a href="tel:911" class="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-lg transition inline-flex items-center gap-1.5">
+                    <i data-lucide="phone-call" class="w-3.5 h-3.5"></i> Call Emergency (911)
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-sm" id="printable-report">
+            <div class="flex items-center justify-between mb-4">
+              <span class="text-xs font-extrabold uppercase tracking-wider text-teal-700 flex items-center gap-1.5">
+                <i data-lucide="check-circle" class="w-4 h-4"></i>
+                Differential Diagnosis Rankings
+              </span>
+              <button id="print-report-btn" class="px-2.5 py-1 text-[11px] font-bold text-teal-700 bg-teal-50 hover:bg-teal-100 rounded-lg border border-teal-200 flex items-center gap-1 transition">
+                <i data-lucide="printer" class="w-3.5 h-3.5"></i>
+                <span>Print Doctor Report</span>
+              </button>
+            </div>
+
+            <!-- HERO CARD -->
+            <div id="top-prediction-card" class="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-teal-50 via-cyan-50/50 to-emerald-50 border border-teal-200/90 mb-4 shadow-xs">
+              <div class="flex items-start justify-between gap-3 mb-2.5">
+                <div>
+                  <span class="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide bg-teal-700 text-white mb-1.5">
+                    Rank #1 Primary Differential
+                  </span>
+                  <h3 id="top-disease-name" class="text-xl sm:text-2xl font-black text-slate-900 leading-tight"></h3>
+                </div>
+                <div class="text-right flex-shrink-0">
+                  <span id="top-disease-confidence" class="text-2xl sm:text-3xl font-black text-teal-800"></span>
+                  <p class="text-[10px] text-teal-600 font-bold uppercase">Confidence</p>
+                </div>
+              </div>
+
+              <div class="w-full bg-white/90 rounded-full h-3 overflow-hidden mb-3 border border-teal-200 shadow-inner">
+                <div id="top-disease-bar" class="bg-gradient-to-r from-teal-600 via-cyan-600 to-emerald-500 h-full rounded-full transition-all duration-700" style="width: 0%"></div>
+              </div>
+
+              <p id="top-disease-desc" class="text-xs text-slate-700 mb-3.5 leading-relaxed font-normal"></p>
+
+              <!-- XAI EXPLANATION -->
+              <div class="mb-3.5 p-3 rounded-xl bg-white/90 border border-teal-100">
+                <p class="text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                  <i data-lucide="help-circle" class="w-3.5 h-3.5 text-teal-600"></i>
+                  Why Was This Condition Predicted? (XAI Drivers):
+                </p>
+                <div id="top-disease-xai" class="flex flex-wrap gap-1.5"></div>
+              </div>
+
+              <!-- PRECAUTIONS -->
+              <div class="bg-white/80 rounded-xl p-3.5 border border-teal-100/80">
+                <p class="text-[11px] font-bold text-slate-800 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                  <i data-lucide="shield-check" class="w-4 h-4 text-teal-600"></i>
+                  Recommended Clinical Precautions:
+                </p>
+                <ul id="top-disease-precautions" class="grid grid-cols-1 gap-1.5 text-xs text-slate-700"></ul>
+              </div>
+            </div>
+
+            <!-- DYNAMIC TRIAGE FOLLOW-UP QUESTIONS -->
+            <div id="triage-section" class="mb-4 p-4 rounded-xl bg-cyan-50/80 border border-cyan-200">
+              <p class="text-xs font-bold text-cyan-950 flex items-center gap-1.5 mb-1.5">
+                <i data-lucide="help-circle" class="w-4 h-4 text-cyan-700"></i>
+                Intelligent Follow-Up Questions (Narrow Down Differential):
+              </p>
+              <p class="text-[11px] text-cyan-800 mb-2.5">To help rule out alternative diagnoses, are you also experiencing any of these?</p>
+              <div id="triage-buttons" class="flex flex-wrap gap-2"></div>
+            </div>
+
+            <!-- RUNNERS UP -->
+            <div>
+              <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2.5">Alternative Differential Considerations:</p>
+              <div class="space-y-2.5" id="runner-ups-container"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+    <!-- TAB 2: EYE SCAN VISION CLASSIFIER -->
+    <div id="tab-eye" class="tab-pane hidden max-w-4xl mx-auto">
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8">
+        <div class="flex items-center gap-3 mb-6 pb-4 border-b border-slate-100">
+          <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+            <i data-lucide="eye" class="w-7 h-7"></i>
+          </div>
+          <div>
+            <h2 class="text-xl font-bold text-slate-900">Ophthalmic Computer Vision AI</h2>
+            <p class="text-xs text-slate-500">Upload an eye photo / scan to classify Glaucoma, Cataracts, Strabismus, Uveitis, or Proptosis</p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <div>
+            <div id="drop-zone" class="border-2 border-dashed border-slate-300 hover:border-blue-500 rounded-2xl p-6 text-center cursor-pointer bg-slate-50/50 hover:bg-blue-50/20 transition flex flex-col items-center justify-center min-h-[220px]">
+              <i data-lucide="upload-cloud" class="w-10 h-10 text-slate-400 mb-2"></i>
+              <p class="text-xs font-bold text-slate-700">Click or drag & drop an eye scan (JPEG/PNG)</p>
+              <p class="text-[11px] text-slate-400 mt-1">Supports fundus photos & anterior eye images</p>
+              <input type="file" id="eye-file-input" accept="image/*" class="hidden">
+            </div>
+            <div id="eye-preview-container" class="hidden mt-3 text-center">
+              <img id="eye-preview-img" class="max-h-48 mx-auto rounded-xl border border-slate-200 shadow-sm" src="">
+              <button id="run-eye-vision-btn" class="mt-3 w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center justify-center gap-2">
+                <i data-lucide="sparkles" class="w-4 h-4"></i> Run AI Ophthalmic Scan
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <div id="eye-empty-result" class="h-full border border-dashed border-slate-200 rounded-2xl p-6 flex flex-col items-center justify-center text-center text-slate-400 text-xs">
+              <i data-lucide="scan" class="w-8 h-8 mb-2 text-slate-300"></i>
+              Upload an image to see class probability rankings and clinical guidance.
+            </div>
+            <div id="eye-loading-result" class="hidden h-full border border-slate-200 rounded-2xl p-6 flex flex-col items-center justify-center text-center text-xs">
+              <div class="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin mb-3"></div>
+              <p class="font-bold text-slate-800">Processing ocular visual features...</p>
+            </div>
+            <div id="eye-result-card" class="hidden p-5 rounded-2xl bg-blue-50/60 border border-blue-200"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: DIABETES -->
+    <div id="tab-diabetes" class="tab-pane hidden max-w-4xl mx-auto">
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8">
+        <div class="flex items-center gap-3 mb-6 pb-4 border-b border-slate-100">
+          <div class="w-12 h-12 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
+            <i data-lucide="droplet" class="w-7 h-7"></i>
+          </div>
+          <div>
+            <h2 class="text-xl font-bold text-slate-900">Diabetes Risk Diagnostic Model</h2>
+            <p class="text-xs text-slate-500">Trained on Pima Indians clinical dataset (8 biomarker parameters)</p>
+          </div>
+        </div>
+        <form id="diabetes-form" class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+          <div><label class="block text-xs font-bold text-slate-700 mb-1">Fasting Glucose (mg/dL)</label><input type="number" id="diab-glucose" value="120" min="40" max="300" required class="w-full px-3.5 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"></div>
+          <div><label class="block text-xs font-bold text-slate-700 mb-1">BMI (kg/m²)</label><input type="number" step="0.1" id="diab-bmi" value="28.5" min="10" max="70" required class="w-full px-3.5 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"></div>
+          <div><label class="block text-xs font-bold text-slate-700 mb-1">Blood Pressure - Diastolic (mmHg)</label><input type="number" id="diab-bp" value="78" min="30" max="200" required class="w-full px-3.5 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"></div>
+          <div><label class="block text-xs font-bold text-slate-700 mb-1">Age (Years)</label><input type="number" id="diab-age" value="45" min="1" max="120" required class="w-full px-3.5 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"></div>
+          <div><label class="block text-xs font-bold text-slate-700 mb-1">Serum Insulin 2-Hour (μU/mL)</label><input type="number" id="diab-insulin" value="85" min="0" max="900" class="w-full px-3.5 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"></div>
+          <div><label class="block text-xs font-bold text-slate-700 mb-1">Pregnancies (if female)</label><input type="number" id="diab-preg" value="1" min="0" max="20" class="w-full px-3.5 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"></div>
+          <div class="sm:col-span-2 pt-2"><button type="submit" class="w-full py-3 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-sm shadow-md shadow-rose-600/20 transition flex items-center justify-center gap-2"><i data-lucide="calculator" class="w-4 h-4"></i><span>Calculate Diabetes Risk</span></button></div>
+        </form>
+        <div id="diabetes-result" class="hidden p-5 rounded-2xl bg-rose-50/60 border border-rose-200"></div>
+      </div>
+    </div>
+
+    <!-- TAB 4: STROKE -->
+    <div id="tab-stroke" class="tab-pane hidden max-w-4xl mx-auto">
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8">
+        <div class="flex items-center gap-3 mb-6 pb-4 border-b border-slate-100">
+          <div class="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center"><i data-lucide="brain" class="w-7 h-7"></i></div>
+          <div><h2 class="text-xl font-bold text-slate-900">Stroke Risk Assessment Model</h2><p class="text-xs text-slate-500">Trained on 5,110 cardiovascular patient records</p></div>
+        </div>
+        <form id="stroke-form" class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+          <div><label class="block text-xs font-bold text-slate-700 mb-1">Age</label><input type="number" id="stroke-age" value="62" min="1" max="120" required class="w-full px-3.5 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500"></div>
+          <div><label class="block text-xs font-bold text-slate-700 mb-1">Average Glucose Level (mg/dL)</label><input type="number" step="0.1" id="stroke-glucose" value="145.0" min="40" max="350" required class="w-full px-3.5 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500"></div>
+          <div><label class="block text-xs font-bold text-slate-700 mb-1">BMI (kg/m²)</label><input type="number" step="0.1" id="stroke-bmi" value="30.2" min="10" max="70" required class="w-full px-3.5 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500"></div>
+          <div><label class="block text-xs font-bold text-slate-700 mb-1">Hypertension History</label><select id="stroke-hypertension" class="w-full px-3.5 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl"><option value="0">No Hypertension</option><option value="1" selected>Yes, Diagnosed</option></select></div>
+          <div><label class="block text-xs font-bold text-slate-700 mb-1">Heart Disease History</label><select id="stroke-heart-disease" class="w-full px-3.5 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl"><option value="0">No Heart Disease</option><option value="1" selected>Yes, Diagnosed</option></select></div>
+          <div><label class="block text-xs font-bold text-slate-700 mb-1">Smoking Status</label><select id="stroke-smoking" class="w-full px-3.5 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl"><option value="never smoked">Never Smoked</option><option value="formerly smoked" selected>Formerly Smoked</option><option value="smokes">Currently Smokes</option></select></div>
+          <div class="sm:col-span-2 pt-2"><button type="submit" class="w-full py-3 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-sm shadow-md shadow-purple-600/20 transition flex items-center justify-center gap-2"><i data-lucide="calculator" class="w-4 h-4"></i><span>Calculate Stroke Probability</span></button></div>
+        </form>
+        <div id="stroke-result" class="hidden p-5 rounded-2xl bg-purple-50/60 border border-purple-200"></div>
+      </div>
+    </div>
+
+    <!-- TAB 5: HEART FAILURE -->
+    <div id="tab-heart" class="tab-pane hidden max-w-4xl mx-auto">
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8">
+        <div class="flex items-center gap-3 mb-6 pb-4 border-b border-slate-100">
+          <div class="w-12 h-12 rounded-xl bg-red-50 text-red-600 flex items-center justify-center"><i data-lucide="heart-pulse" class="w-7 h-7"></i></div>
+          <div><h2 class="text-xl font-bold text-slate-900">Heart Failure Clinical Risk & Mortality Model</h2><p class="text-xs text-slate-500">Trained on clinical cardiac biomarker records</p></div>
+        </div>
+        <form id="heart-form" class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+          <div><label class="block text-xs font-bold text-slate-700 mb-1">Ejection Fraction (%)</label><input type="number" id="hf-ef" value="30" min="10" max="80" required class="w-full px-3.5 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-red-500/20 focus:border-red-500"></div>
+          <div><label class="block text-xs font-bold text-slate-700 mb-1">Serum Creatinine (mg/dL)</label><input type="number" step="0.1" id="hf-creat" value="1.8" min="0.3" max="15.0" required class="w-full px-3.5 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-red-500/20 focus:border-red-500"></div>
+          <div><label class="block text-xs font-bold text-slate-700 mb-1">Age</label><input type="number" id="hf-age" value="65" min="18" max="110" required class="w-full px-3.5 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-red-500/20 focus:border-red-500"></div>
+          <div><label class="block text-xs font-bold text-slate-700 mb-1">High Blood Pressure History</label><select id="hf-hbp" class="w-full px-3.5 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl"><option value="0">No</option><option value="1" selected>Yes</option></select></div>
+          <div class="sm:col-span-2 pt-2"><button type="submit" class="w-full py-3 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-sm shadow-md shadow-red-600/20 transition flex items-center justify-center gap-2"><i data-lucide="calculator" class="w-4 h-4"></i><span>Calculate Heart Failure Risk</span></button></div>
+        </form>
+        <div id="heart-result" class="hidden p-5 rounded-2xl bg-red-50/60 border border-red-200"></div>
+      </div>
+    </div>
+
+    <!-- TAB 6: AUDIT LOG -->
+    <div id="tab-history" class="tab-pane hidden max-w-4xl mx-auto">
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8">
+        <div class="flex items-center justify-between mb-6 pb-4 border-b border-slate-100">
+          <div class="flex items-center gap-3">
+            <div class="w-12 h-12 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center"><i data-lucide="database" class="w-7 h-7"></i></div>
+            <div><h2 class="text-xl font-bold text-slate-900">SQLite Prediction Audit Logs</h2><p class="text-xs text-slate-500">Real-time audit history of prediction sessions</p></div>
+          </div>
+          <button id="refresh-logs-btn" class="px-3.5 py-1.5 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg flex items-center gap-1.5 transition"><i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i><span>Refresh</span></button>
+        </div>
+        <div id="logs-container" class="space-y-3 max-h-[500px] overflow-y-auto custom-scrollbar"></div>
+      </div>
+    </div>
+
+  </main>
+  <footer class="bg-white border-t border-slate-200 py-4 mt-auto">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-500 text-center sm:text-left">
+      <p><strong>Educational tool only — not medical advice.</strong> Multi-Modal Intelligence Platform.</p>
+      <p class="text-slate-400 font-medium">FastAPI &bull; Scikit-Learn &bull; Computer Vision &bull; SQLite Audit</p>
+    </div>
+  </footer>
+
+  <script>
+    const API_BASE = window.location.origin;
+    let allSymptoms = [];
+    const selectedSymptoms = new Set();
+    let currentUploadedEyeFile = null;
+
+    const POPULAR_SYMPTOMS = [
+      { key: "high_fever", label: "High Fever" },
+      { key: "headache", label: "Headache" },
+      { key: "cough", label: "Cough" },
+      { key: "fatigue", label: "Fatigue" },
+      { key: "nausea", label: "Nausea" },
+      { key: "vomiting", label: "Vomiting" },
+      { key: "skin_rash", label: "Skin Rash" },
+      { key: "joint_pain", label: "Joint Pain" },
+      { key: "chills", label: "Chills" },
+      { key: "chest_pain", label: "Chest Pain" },
+      { key: "breathlessness", label: "Breathlessness" },
+      { key: "itching", label: "Itching" },
+      { key: "abdominal_pain", label: "Abdominal Pain" }
+    ];
+
+    async function init() {
+      lucide.createIcons();
+      setupTabs();
+      renderQuickPicks();
+      await fetchSymptoms();
+      setupSymptomEvents();
+      setupNLPEvents();
+      setupEyeVisionEvents();
+      setupSpecializedForms();
+    }
+
+    function setupTabs() {
+      const tabs = document.querySelectorAll(".nav-tab");
+      const panes = document.querySelectorAll(".tab-pane");
+
+      tabs.forEach(tab => {
+        tab.addEventListener("click", () => {
+          const target = tab.dataset.tab;
+          tabs.forEach(t => {
+            t.className = "nav-tab px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 transition flex items-center gap-1.5 whitespace-nowrap";
+          });
+          tab.className = "nav-tab px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap bg-white text-teal-900 shadow-xs";
+
+          panes.forEach(p => p.classList.add("hidden"));
+          document.getElementById(target).classList.remove("hidden");
+
+          if (target === "tab-history") fetchAuditLogs();
+        });
+      });
+    }
+
+    function renderQuickPicks() {
+      const container = document.getElementById("quick-picks-container");
+      container.innerHTML = POPULAR_SYMPTOMS.map(s => `
+        <button data-key="${s.key}" class="quick-pick-btn px-2.5 py-1 text-xs rounded-lg border border-slate-200 bg-slate-50 hover:bg-teal-50 hover:border-teal-300 text-slate-700 font-medium transition">
+          + ${s.label}
+        </button>
+      `).join("");
+
+      container.querySelectorAll(".quick-pick-btn").forEach(btn => {
+        btn.addEventListener("click", () => toggleSymptom(btn.dataset.key));
+      });
+    }
+
+    async function fetchSymptoms() {
+      try {
+        const res = await fetch(`${API_BASE}/symptoms`);
+        const data = await res.json();
+        allSymptoms = data.symptoms || [];
+        renderSymptomChecklist(allSymptoms);
+      } catch (err) {
+        document.getElementById("symptoms-list").innerHTML = `<div class="text-rose-600 text-xs p-4 text-center">Failed to connect to backend.</div>`;
+      }
+    }
+
+    function renderSymptomChecklist(symptoms) {
+      const listEl = document.getElementById("symptoms-list");
+      if (!symptoms.length) {
+        listEl.innerHTML = `<div class="text-xs text-slate-400 p-4 text-center">No matching symptoms.</div>`;
+        return;
+      }
+
+      listEl.innerHTML = symptoms.map(s => {
+        const isChecked = selectedSymptoms.has(s.key);
+        return `
+          <label class="flex items-center gap-3 px-3 py-2 hover:bg-slate-100 rounded-lg cursor-pointer transition select-none ${isChecked ? 'bg-teal-50/80 font-semibold' : ''}">
+            <input type="checkbox" value="${s.key}" ${isChecked ? 'checked' : ''} class="symptom-checkbox w-4 h-4 rounded text-teal-600 focus:ring-teal-500 border-slate-300">
+            <span class="text-xs text-slate-700 ${isChecked ? 'text-teal-950 font-bold' : ''}">${s.label}</span>
+          </label>
+        `;
+      }).join("");
+
+      listEl.querySelectorAll(".symptom-checkbox").forEach(cb => {
+        cb.addEventListener("change", (e) => toggleSymptom(e.target.value, e.target.checked));
+      });
+    }
+
+    function toggleSymptom(key, forceState = null) {
+      if (forceState !== null) {
+        if (forceState) selectedSymptoms.add(key);
+        else selectedSymptoms.delete(key);
+      } else {
+        if (selectedSymptoms.has(key)) selectedSymptoms.delete(key);
+        else selectedSymptoms.add(key);
+      }
+      updateUI();
+    }
+
+    function updateUI() {
+      const count = selectedSymptoms.size;
+      document.getElementById("selected-badge-count").textContent = `${count} selected`;
+      document.getElementById("predict-btn").disabled = count === 0;
+
+      document.querySelectorAll(".quick-pick-btn").forEach(btn => {
+        const key = btn.dataset.key;
+        if (selectedSymptoms.has(key)) {
+          btn.className = "quick-pick-btn px-2.5 py-1 text-xs rounded-lg border border-teal-600 bg-teal-600 text-white font-semibold shadow-xs transition";
+          btn.textContent = `✓ ${POPULAR_SYMPTOMS.find(s => s.key === key)?.label || key}`;
+        } else {
+          btn.className = "quick-pick-btn px-2.5 py-1 text-xs rounded-lg border border-slate-200 bg-slate-50 hover:bg-teal-50 hover:border-teal-300 text-slate-700 font-medium transition";
+          btn.textContent = `+ ${POPULAR_SYMPTOMS.find(s => s.key === key)?.label || key}`;
+        }
+      });
+
+      const chipsSec = document.getElementById("selected-chips-section");
+      const chipsCont = document.getElementById("selected-chips-container");
+      if (count > 0) {
+        chipsSec.classList.remove("hidden");
+        chipsCont.innerHTML = Array.from(selectedSymptoms).map(k => {
+          const item = allSymptoms.find(s => s.key === k) || { key: k, label: k.replace(/_/g, ' ') };
+          return `
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-teal-700 text-white shadow-xs">
+              ${item.label}
+              <button data-remove="${k}" class="remove-chip-btn hover:text-teal-200 ml-0.5"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>
+            </span>
+          `;
+        }).join("");
+
+        chipsCont.querySelectorAll(".remove-chip-btn").forEach(btn => {
+          btn.addEventListener("click", () => toggleSymptom(btn.dataset.remove, false));
+        });
+      } else {
+        chipsSec.classList.add("hidden");
+      }
+
+      const query = document.getElementById("symptom-search").value.toLowerCase().trim();
+      const filtered = allSymptoms.filter(s => s.label.toLowerCase().includes(query) || s.key.toLowerCase().includes(query));
+      renderSymptomChecklist(filtered);
+      lucide.createIcons();
+    }
+
+    function setupNLPEvents() {
+      const nlpBtn = document.getElementById("nlp-extract-btn");
+      const nlpInput = document.getElementById("nlp-input");
+
+      const handleExtract = async () => {
+        const text = nlpInput.value.trim();
+        if (!text) return;
+        try {
+          const res = await fetch(`${API_BASE}/extract-symptoms`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ text })
+          });
+          const data = await res.json();
+          if (data.matched_symptoms && data.matched_symptoms.length > 0) {
+            data.matched_symptoms.forEach(s => selectedSymptoms.add(s.key));
+            updateUI();
+            nlpInput.value = "";
+          } else {
+            alert("No matching clinical symptoms identified from the description. Try mentioning specific signs like headache, cough, fever, etc.");
+          }
+        } catch (e) {
+          alert("Error extracting symptoms: " + e.message);
+        }
+      };
+
+      nlpBtn.addEventListener("click", handleExtract);
+      nlpInput.addEventListener("keydown", (e) => { if (e.key === "Enter") handleExtract(); });
+    }
+
+    function setupSymptomEvents() {
+      const searchInput = document.getElementById("symptom-search");
+      const clearSearchBtn = document.getElementById("clear-search-btn");
+
+      searchInput.addEventListener("input", (e) => {
+        const query = e.target.value.toLowerCase().trim();
+        clearSearchBtn.classList.toggle("hidden", query.length === 0);
+        const filtered = allSymptoms.filter(s => s.label.toLowerCase().includes(query) || s.key.toLowerCase().includes(query));
+        renderSymptomChecklist(filtered);
+      });
+
+      clearSearchBtn.addEventListener("click", () => {
+        searchInput.value = "";
+        clearSearchBtn.classList.add("hidden");
+        renderSymptomChecklist(allSymptoms);
+      });
+
+      document.getElementById("clear-all-btn").addEventListener("click", () => {
+        selectedSymptoms.clear();
+        updateUI();
+      });
+
+      document.getElementById("predict-btn").addEventListener("click", runPrediction);
+      document.getElementById("refresh-logs-btn").addEventListener("click", fetchAuditLogs);
+      document.getElementById("print-report-btn").addEventListener("click", () => window.print());
+    }
+
+    async function runPrediction() {
+      if (selectedSymptoms.size === 0) return;
+
+      const emptyState = document.getElementById("empty-state");
+      const loadingState = document.getElementById("loading-state");
+      const resultsCont = document.getElementById("results-container");
+
+      emptyState.classList.add("hidden");
+      resultsCont.classList.add("hidden");
+      loadingState.classList.remove("hidden");
+
+      try {
+        const res = await fetch(`${API_BASE}/predict`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ symptoms: Array.from(selectedSymptoms) })
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.detail || "Prediction request failed");
+        }
+
+        const data = await res.json();
+        renderResults(data);
+      } catch (err) {
+        alert("Prediction Error: " + err.message);
+        emptyState.classList.remove("hidden");
+      } finally {
+        loadingState.classList.add("hidden");
+      }
+    }
+
+    function renderResults(data) {
+      const resultsCont = document.getElementById("results-container");
+      resultsCont.classList.remove("hidden");
+
+      // Emergency Alert
+      const emBanner = document.getElementById("emergency-banner");
+      if (data.emergency_alert && data.emergency_alert.is_emergency) {
+        emBanner.classList.remove("hidden");
+        document.getElementById("emergency-title").textContent = data.emergency_alert.title;
+        document.getElementById("emergency-instructions").innerHTML = data.emergency_alert.instructions.map(i => `<li>&bull; ${i}</li>`).join("");
+      } else {
+        emBanner.classList.add("hidden");
+      }
+
+      const top = data.top_predictions[0];
+      document.getElementById("top-disease-name").textContent = top.display_name || top.disease;
+      document.getElementById("top-disease-confidence").textContent = top.confidence_percent;
+      document.getElementById("top-disease-bar").style.width = top.confidence_percent;
+      document.getElementById("top-disease-desc").textContent = top.description;
+
+      // XAI Drivers
+      const xaiContainer = document.getElementById("top-disease-xai");
+      if (top.contributing_symptoms && top.contributing_symptoms.length > 0) {
+        xaiContainer.innerHTML = top.contributing_symptoms.map(c => `
+          <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[11px] font-bold bg-teal-100 text-teal-800">
+            ✓ ${c.label} (${c.impact})
+          </span>
+        `).join("");
+      } else {
+        xaiContainer.innerHTML = `<span class="text-slate-400 text-xs">Composite multi-symptom pattern</span>`;
+      }
+
+      // Precautions
+      document.getElementById("top-disease-precautions").innerHTML = top.precautions.map(p => `
+        <li class="flex items-start gap-2"><i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-teal-600 flex-shrink-0 mt-0.5"></i><span>${p}</span></li>
+      `).join("");
+
+      // Triage Follow-up questions
+      const triageButtons = document.getElementById("triage-buttons");
+      if (data.suggested_followup_symptoms && data.suggested_followup_symptoms.length > 0) {
+        triageButtons.innerHTML = data.suggested_followup_symptoms.map(s => `
+          <button data-triage-key="${s.key}" class="triage-btn px-3 py-1.5 rounded-lg border border-cyan-300 bg-white hover:bg-cyan-100 text-cyan-900 text-xs font-bold transition flex items-center gap-1.5 shadow-xs">
+            <span>+ Yes, I have ${s.label}</span>
+          </button>
+        `).join("");
+
+        triageButtons.querySelectorAll(".triage-btn").forEach(btn => {
+          btn.addEventListener("click", () => {
+            toggleSymptom(btn.dataset.triageKey, true);
+            runPrediction();
+          });
+        });
+      } else {
+        triageButtons.innerHTML = `<span class="text-xs text-cyan-700">No further discriminatory questions needed.</span>`;
+      }
+
+      // Runners up
+      const runnerContainer = document.getElementById("runner-ups-container");
+      runnerContainer.innerHTML = data.top_predictions.slice(1).map(r => `
+        <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between">
+          <div class="flex-grow pr-4">
+            <div class="flex items-center gap-2">
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-200 text-slate-800">#${r.rank}</span>
+              <h4 class="text-xs font-bold text-slate-900">${r.display_name || r.disease}</h4>
+            </div>
+            <div class="w-full bg-slate-200 rounded-full h-1.5 mt-2 overflow-hidden">
+              <div class="bg-teal-600 h-full rounded-full transition-all duration-500" style="width: ${r.confidence_percent}"></div>
+            </div>
+          </div>
+          <div class="text-right flex-shrink-0">
+            <span class="text-xs font-bold text-slate-800">${r.confidence_percent}</span>
+          </div>
+        </div>
+      `).join("");
+
+      lucide.createIcons();
+    }
+
+    function setupEyeVisionEvents() {
+      const dropZone = document.getElementById("drop-zone");
+      const fileInput = document.getElementById("eye-file-input");
+      const previewCont = document.getElementById("eye-preview-container");
+      const previewImg = document.getElementById("eye-preview-img");
+      const runBtn = document.getElementById("run-eye-vision-btn");
+
+      dropZone.addEventListener("click", () => fileInput.click());
+      dropZone.addEventListener("dragover", (e) => { e.preventDefault(); dropZone.classList.add("border-blue-500"); });
+      dropZone.addEventListener("dragleave", () => dropZone.classList.remove("border-blue-500"));
+      dropZone.addEventListener("drop", (e) => {
+        e.preventDefault();
+        if (e.dataTransfer.files.length) handleEyeFile(e.dataTransfer.files[0]);
+      });
+      fileInput.addEventListener("change", (e) => {
+        if (e.target.files.length) handleEyeFile(e.target.files[0]);
+      });
+
+      function handleEyeFile(file) {
+        currentUploadedEyeFile = file;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          previewImg.src = e.target.result;
+          previewCont.classList.remove("hidden");
+        };
+        reader.readAsDataURL(file);
+      }
+
+      runBtn.addEventListener("click", async () => {
+        if (!currentUploadedEyeFile) return;
+        const emptyRes = document.getElementById("eye-empty-result");
+        const loadingRes = document.getElementById("eye-loading-result");
+        const resultCard = document.getElementById("eye-result-card");
+
+        emptyRes.classList.add("hidden");
+        resultCard.classList.add("hidden");
+        loadingRes.classList.remove("hidden");
+
+        const formData = new FormData();
+        formData.append("file", currentUploadedEyeFile);
+
+        try {
+          const res = await fetch(`${API_BASE}/predict/eye-disease`, { method: "POST", body: formData });
+          const data = await res.json();
+
+          resultCard.classList.remove("hidden");
+          resultCard.innerHTML = `
+            <div class="mb-3">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full">Top Visual Finding</span>
+              <h4 class="text-lg font-black text-slate-900 mt-1">${data.primary_prediction}</h4>
+              <p class="text-xs font-bold text-blue-800">Confidence: ${data.confidence_percent}</p>
+            </div>
+            <p class="text-xs text-slate-600 mb-3 leading-relaxed">${data.description}</p>
+            <div class="mb-3 p-2.5 rounded-xl bg-white border border-blue-100">
+              <p class="text-[11px] font-bold text-slate-700 uppercase mb-1">Precautions:</p>
+              <ul class="text-xs text-slate-600 space-y-1">${data.precautions.map(p => `<li>&bull; ${p}</li>`).join("")}</ul>
+            </div>
+            <div>
+              <p class="text-[11px] font-bold text-slate-400 uppercase mb-1.5">Differential Probabilities:</p>
+              <div class="space-y-1.5">${data.all_rankings.slice(1).map(r => `
+                <div class="flex items-center justify-between text-xs bg-white px-2.5 py-1 rounded-lg border border-slate-200">
+                  <span class="text-slate-700 font-medium">${r.display_name}</span>
+                  <span class="font-bold text-slate-900">${r.probability_percent}</span>
+                </div>
+              `).join("")}</div>
+            </div>
+          `;
+        } catch (e) {
+          alert("Error in vision scan: " + e.message);
+          emptyRes.classList.remove("hidden");
+        } finally {
+          loadingRes.classList.add("hidden");
+        }
+      });
+    }
+
+    function setupSpecializedForms() {
+      document.getElementById("diabetes-form").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const payload = {
+          glucose: parseFloat(document.getElementById("diab-glucose").value),
+          bmi: parseFloat(document.getElementById("diab-bmi").value),
+          blood_pressure: parseFloat(document.getElementById("diab-bp").value),
+          age: parseInt(document.getElementById("diab-age").value),
+          insulin: parseFloat(document.getElementById("diab-insulin").value || 80),
+          pregnancies: parseInt(document.getElementById("diab-preg").value || 0)
+        };
+        try {
+          const res = await fetch(`${API_BASE}/predict/diabetes`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+          const data = await res.json();
+          renderRiskCard("diabetes-result", data, "rose");
+        } catch (err) { alert("Error: " + err.message); }
+      });
+
+      document.getElementById("stroke-form").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const payload = {
+          age: parseFloat(document.getElementById("stroke-age").value),
+          avg_glucose_level: parseFloat(document.getElementById("stroke-glucose").value),
+          bmi: parseFloat(document.getElementById("stroke-bmi").value),
+          hypertension: parseInt(document.getElementById("stroke-hypertension").value),
+          heart_disease: parseInt(document.getElementById("stroke-heart-disease").value),
+          smoking_status: document.getElementById("stroke-smoking").value
+        };
+        try {
+          const res = await fetch(`${API_BASE}/predict/stroke`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+          const data = await res.json();
+          renderRiskCard("stroke-result", data, "purple");
+        } catch (err) { alert("Error: " + err.message); }
+      });
+
+      document.getElementById("heart-form").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const payload = {
+          ejection_fraction: parseFloat(document.getElementById("hf-ef").value),
+          serum_creatinine: parseFloat(document.getElementById("hf-creat").value),
+          age: parseFloat(document.getElementById("hf-age").value),
+          high_blood_pressure: parseInt(document.getElementById("hf-hbp").value)
+        };
+        try {
+          const res = await fetch(`${API_BASE}/predict/heart-failure`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+          const data = await res.json();
+          renderRiskCard("heart-result", data, "red");
+        } catch (err) { alert("Error: " + err.message); }
+      });
+    }
+
+    function renderRiskCard(elementId, data, color) {
+      const container = document.getElementById(elementId);
+      container.classList.remove("hidden");
+      const badgeColor = data.risk_level.includes("High") ? "bg-rose-100 text-rose-800" : (data.risk_level.includes("Moderate") ? "bg-amber-100 text-amber-800" : "bg-emerald-100 text-emerald-800");
+
+      container.innerHTML = `
+        <div class="flex items-center justify-between mb-3">
+          <div>
+            <span class="text-xs font-bold uppercase tracking-wide text-slate-500">${data.model}</span>
+            <h4 class="text-lg font-black text-slate-900">Estimated Risk: <span class="px-2.5 py-0.5 rounded-full text-xs font-bold ${badgeColor}">${data.risk_level} (${data.probability_percent})</span></h4>
+          </div>
+        </div>
+        <div class="w-full bg-white rounded-full h-3 mb-4 overflow-hidden border border-slate-200">
+          <div class="bg-gradient-to-r from-emerald-500 via-amber-500 to-rose-600 h-full rounded-full transition-all duration-700" style="width: ${data.probability_percent}"></div>
+        </div>
+        <div>
+          <p class="text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-2">Clinical Recommendations:</p>
+          <ul class="space-y-1.5 text-xs text-slate-700">
+            ${data.recommendations.map(r => `<li class="flex items-start gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-slate-600 mt-0.5 flex-shrink-0"></i><span>${r}</span></li>`).join("")}
+          </ul>
+        </div>
+      `;
+      lucide.createIcons();
+    }
+
+    async function fetchAuditLogs() {
+      const cont = document.getElementById("logs-container");
+      cont.innerHTML = `<div class="text-center text-xs text-slate-400 py-8 font-medium">Fetching SQLite records...</div>`;
+
+      try {
+        const res = await fetch(`${API_BASE}/logs?limit=30`);
+        const data = await res.json();
+        const logs = data.logs || [];
+        if (!logs.length) {
+          cont.innerHTML = `<div class="text-center text-xs text-slate-400 py-8">No prediction records logged yet.</div>`;
+          return;
+        }
+
+        cont.innerHTML = logs.map(log => `
+          <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl text-xs space-y-1.5">
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-slate-900 text-sm">${log.top_disease}</span>
+              <span class="px-2.5 py-0.5 rounded-full bg-teal-100 text-teal-800 font-bold text-xs">${(log.top_confidence * 100).toFixed(1)}%</span>
+            </div>
+            <p class="text-slate-500 text-[11px] font-medium">Time: ${new Date(log.timestamp).toLocaleString()}</p>
+            <div class="text-[11px] text-slate-700">
+              <span class="font-bold text-slate-800">Symptoms Evaluated:</span> ${log.symptoms.map(s => s.replace(/_/g, ' ')).join(", ")}
+            </div>
+          </div>
+        `).join("");
+      } catch (err) {
+        cont.innerHTML = `<div class="text-center text-rose-600 text-xs py-8">Failed to load logs: ${err.message}</div>`;
+      }
+    }
+
+    window.addEventListener("DOMContentLoaded", init);
+  </script>
+</body>
+</html>

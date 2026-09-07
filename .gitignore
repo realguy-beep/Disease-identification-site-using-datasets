@@ -1,0 +1,60 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Virtual Environments
+.venv/
+venv/
+ENV/
+env/
+env.bak/
+venv.bak/
+
+# Environment Variables & Secrets (NEVER commit secrets)
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+*.cert
+*.crt
+
+# Exception: allow template file
+!.env.example
+
+# Databases & Runtime State (NEVER commit user/prediction databases)
+*.db
+*.sqlite
+*.sqlite3
+predictions.db
+
+# Logs
+*.log
+logs/
+*.pid
+
+# Raw incoming datasets & scratch work
+data/incoming/
+scratch/
+tmp/
+*.tmp
+
+# Operating System Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+[Dd]esktop.ini
+
+# IDE & Editor Directories
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
