@@ -27,21 +27,3 @@ A multi-modal clinical AI web application featuring general multi-class disease 
 5. **👁️ Computer Vision Eye Scan Upload**: Drag-and-drop anterior eye or fundus scans with immediate differential disease probabilities and guidelines.
 6. **📄 One-Click Printable Doctor Consultation Report**: Cleanly formatted printable medical summary to take to physician consultations.
 7. **📜 SQLite Audit Trail**: Persistent logging of inference requests in `predictions.db`.
-
----
-
-## 🚀 Quick Start
-
-```powershell
-cd C:\Users\LENOVO\.gemini\antigravity\scratch\disease-prediction-app
-.\.venv\Scripts\activate
-
-# Run Comprehensive Verification Test Suite
-python test_pipeline.py
-
-# Start Web Server
-python app.py
-```
-
-- **Web App:** [http://localhost:8000](http://localhost:8000)
-- **Interactive Swagger Docs:** [http://localhost:8000/docs](http://localhost:8000/docs)
