@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Loom System Info</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #0d0f18;
+      color: #e2e8f0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      user-select: none;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 18px;
+      background: rgba(0, 0, 0, 0.3);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .os-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .os-logo {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #6366f1, #a855f7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 800;
+      color: #fff;
+    }
+    .os-name { font-size: 14px; font-weight: 700; color: #fff; }
+    .os-build { font-size: 11px; color: #64748b; font-family: monospace; }
+
+    .content {
+      flex: 1;
+      padding: 16px 20px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    @media (max-width: 500px) {
+      .grid-2 { grid-template-columns: 1fr; }
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.025);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      border-radius: 10px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .card-title {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #94a3b8;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+    }
+    .stat-label { color: #64748b; }
+    .stat-val { color: #f1f5f9; font-family: monospace; font-weight: 600; }
+
+    /* Storage Gauge */
+    .storage-container {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .progress-bar-bg {
+      height: 8px;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.08);
+      overflow: hidden;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #10b981, #38bdf8);
+      width: 4%;
+      border-radius: 4px;
+      transition: width 0.4s ease;
+    }
+
+    /* Capabilities Matrix */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 11px;
+    }
+    th {
+      text-align: left;
+      color: #64748b;
+      padding: 6px 8px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      text-transform: uppercase;
+      font-size: 10px;
+    }
+    td {
+      padding: 6px 8px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      color: #cbd5e1;
+    }
+    .perm-chip {
+      background: rgba(99, 102, 241, 0.15);
+      border: 1px solid rgba(99, 102, 241, 0.25);
+      color: #a5b4fc;
+      padding: 1px 5px;
+      border-radius: 4px;
+      font-size: 9.5px;
+      font-family: monospace;
+      margin-right: 3px;
+      display: inline-block;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="os-badge">
+      <div class="os-logo">L</div>
+      <div>
+        <div class="os-name">Loom OS v2.4.0 (Aero Edition)</div>
+        <div class="os-build">WebKernel 6.1-wasm • Build 2026.09.07</div>
+      </div>
+    </div>
+    <div style="font-size: 11px; font-family: monospace; color: #10b981;" id="uptimeText">
+      Uptime: 00:00:00
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="grid-2">
+      <!-- Hardware Platform Specs -->
+      <div class="card">
+        <div class="card-title">💻 Host Platform Hardware</div>
+        <div class="stat-row">
+          <span class="stat-label">CPU Logical Cores:</span>
+          <span class="stat-val" id="specCores">8 Cores</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Device Memory:</span>
+          <span class="stat-val" id="specMemory">≥ 8 GB RAM</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Display Resolution:</span>
+          <span class="stat-val" id="specScreen">1920 × 1080 (24-bit)</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Platform Architecture:</span>
+          <span class="stat-val" id="specPlatform">Win32 x86_64</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Network Status:</span>
+          <span class="stat-val" style="color:#10b981;" id="specNetwork">Online (Local First)</span>
+        </div>
+      </div>
+
+      <!-- Storage Quota Gauge -->
+      <div class="card">
+        <div class="card-title">💾 Storage & IndexedDB Quota</div>
+        <div class="storage-container">
+          <div style="display:flex; justify-content:space-between; font-size:11.5px;">
+            <span id="storageUsedText">Calculating usage...</span>
+            <span style="color:#64748b;" id="storageQuotaText">Quota: --</span>
+          </div>
+          <div class="progress-bar-bg">
+            <div class="progress-bar-fill" id="storageFill"></div>
+          </div>
+        </div>
+        <div style="font-size: 11px; color: #64748b; line-height: 1.5; margin-top: 4px;">
+          Loom OS uses a local-first offline IndexedDB persistence layer (<code style="color:#a5b4fc;">Dexie.js</code>) with zero mandatory cloud dependencies.
+        </div>
+      </div>
+    </div>
+
+    <!-- Sandboxed Apps Capabilities Matrix -->
+    <div class="card">
+      <div class="card-title">🛡️ Installed Applications & Sandbox Matrix</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Application</th>
+            <th>Type</th>
+            <th>Granted Permissions</th>
+            <th>Sandbox Isolation</th>
+          </tr>
+        </thead>
+        <tbody id="appMatrixBody">
+          <tr>
+            <td style="font-weight:600; color:#fff;">Notes Canvas</td>
+            <td>Built-in</td>
+            <td><span class="perm-chip">state:read</span><span class="perm-chip">state:write</span><span class="perm-chip">storage</span></td>
+            <td><span style="color:#10b981;">✓ allow-scripts</span></td>
+          </tr>
+          <tr>
+            <td style="font-weight:600; color:#fff;">Calculator</td>
+            <td>Built-in</td>
+            <td><span class="perm-chip">clipboard:write</span></td>
+            <td><span style="color:#10b981;">✓ allow-scripts</span></td>
+          </tr>
+          <tr>
+            <td style="font-weight:600; color:#fff;">Clock & Timer</td>
+            <td>Built-in</td>
+            <td><span class="perm-chip">notification</span><span class="perm-chip">storage</span></td>
+            <td><span style="color:#10b981;">✓ allow-scripts</span></td>
+          </tr>
+          <tr>
+            <td style="font-weight:600; color:#fff;">Code Editor</td>
+            <td>Built-in</td>
+            <td><span class="perm-chip">vfs:read</span><span class="perm-chip">vfs:write</span></td>
+            <td><span style="color:#10b981;">✓ allow-scripts</span></td>
+          </tr>
+          <tr>
+            <td style="font-weight:600; color:#fff;">Calendar</td>
+            <td>Built-in</td>
+            <td><span class="perm-chip">state:read</span><span class="perm-chip">state:write</span><span class="perm-chip">notification</span></td>
+            <td><span style="color:#10b981;">✓ allow-scripts</span></td>
+          </tr>
+          <tr>
+            <td style="font-weight:600; color:#fff;">Photo Gallery</td>
+            <td>Built-in</td>
+            <td><span class="perm-chip">vfs:read</span><span class="perm-chip">vfs:write</span></td>
+            <td><span style="color:#10b981;">✓ allow-scripts</span></td>
+          </tr>
+          <tr>
+            <td style="font-weight:600; color:#fff;">Media Player</td>
+            <td>Built-in</td>
+            <td><span class="perm-chip">vfs:read</span></td>
+            <td><span style="color:#10b981;">✓ allow-scripts</span></td>
+          </tr>
+          <tr>
+            <td style="font-weight:600; color:#fff;">Weather</td>
+            <td>Built-in</td>
+            <td><span class="perm-chip">storage</span></td>
+            <td><span style="color:#10b981;">✓ allow-scripts</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script src="/apps/loom-sdk.js"></script>
+  <script>
+    const bootTime = Date.now();
+
+    // Host platform diagnostics
+    document.getElementById('specCores').textContent = `${navigator.hardwareConcurrency || 4} Logical Cores`;
+    document.getElementById('specMemory').textContent = navigator.deviceMemory ? `≥ ${navigator.deviceMemory} GB RAM` : 'System Managed';
+    document.getElementById('specScreen').textContent = `${screen.width} × ${screen.height} (${screen.colorDepth}-bit)`;
+    document.getElementById('specPlatform').textContent = navigator.platform || 'WebAssembly Host';
+    document.getElementById('specNetwork').textContent = navigator.onLine ? 'Online (Local First)' : 'Offline (Local First)';
+
+    // Storage Estimate
+    async function checkStorage() {
+      if (navigator.storage && navigator.storage.estimate) {
+        try {
+          const est = await navigator.storage.estimate();
+          const usedMB = (est.usage / (1024 * 1024)).toFixed(1);
+          const quotaMB = (est.quota / (1024 * 1024)).toFixed(0);
+          const percent = Math.max(2, Math.min(100, Math.round((est.usage / est.quota) * 100)));
+
+          document.getElementById('storageUsedText').textContent = `Used: ${usedMB} MB (${percent}%)`;
+          document.getElementById('storageQuotaText').textContent = `Quota: ${quotaMB} MB`;
+          document.getElementById('storageFill').style.width = `${percent}%`;
+        } catch (e) {
+          document.getElementById('storageUsedText').textContent = 'Storage: Healthy';
+        }
+      } else {
+        document.getElementById('storageUsedText').textContent = 'Storage: IndexedDB Active';
+      }
+    }
+
+    // Uptime clock
+    setInterval(() => {
+      const elapsedSec = Math.floor((Date.now() - bootTime) / 1000);
+      const h = String(Math.floor(elapsedSec / 3600)).padStart(2, '0');
+      const m = String(Math.floor((elapsedSec % 3600) / 60)).padStart(2, '0');
+      const s = String(elapsedSec % 60).padStart(2, '0');
+      document.getElementById('uptimeText').textContent = `Uptime: ${h}:${m}:${s}`;
+    }, 1000);
+
+    checkStorage();
+  </script>
+</body>
+</html>

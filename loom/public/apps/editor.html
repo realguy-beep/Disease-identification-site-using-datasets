@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Loom Code Editor</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #090b10;
+      color: #e2e8f0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .menubar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 12px;
+      background: #0f121a;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .left-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .file-tab {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 6px;
+      font-size: 12px;
+      font-family: monospace;
+      color: #e2e8f0;
+    }
+    .dirty-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #38bdf8;
+      display: none;
+    }
+    .dirty-dot.active { display: block; }
+
+    .btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #cbd5e1;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.15s;
+    }
+    .btn:hover { background: rgba(255, 255, 255, 0.14); color: #fff; }
+    .btn.primary { background: #0284c7; border-color: #0369a1; color: #fff; }
+    .btn.primary:hover { background: #0369a1; }
+
+    select {
+      background: #141824;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 6px;
+      color: #cbd5e1;
+      font-size: 11px;
+      padding: 3px 6px;
+      outline: none;
+    }
+
+    /* Find & Replace Bar */
+    .find-bar {
+      display: none;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      background: #131722;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .find-input {
+      background: #090b10;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 4px;
+      color: #fff;
+      font-size: 11px;
+      padding: 4px 8px;
+      outline: none;
+      font-family: monospace;
+      width: 140px;
+    }
+    .find-input:focus { border-color: #38bdf8; }
+
+    /* Code View Area */
+    .editor-wrapper {
+      flex: 1;
+      display: flex;
+      position: relative;
+      overflow: hidden;
+    }
+    .line-numbers {
+      width: 44px;
+      background: #0b0d14;
+      border-right: 1px solid rgba(255, 255, 255, 0.06);
+      padding: 12px 6px;
+      font-family: "JetBrains Mono", "Fira Code", monospace;
+      font-size: 13px;
+      line-height: 20px;
+      color: #475569;
+      text-align: right;
+      user-select: none;
+      overflow: hidden;
+    }
+    .code-area {
+      flex: 1;
+      height: 100%;
+      background: transparent;
+      border: none;
+      color: #f8fafc;
+      font-family: "JetBrains Mono", "Fira Code", monospace;
+      font-size: 13px;
+      line-height: 20px;
+      padding: 12px;
+      resize: none;
+      outline: none;
+      white-space: pre;
+      overflow: auto;
+      tab-size: 2;
+    }
+
+    /* Status bar */
+    .statusbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 4px 12px;
+      background: #0c0e16;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      font-size: 11px;
+      color: #64748b;
+      font-family: monospace;
+    }
+
+    /* VFS Open Modal */
+    .modal-backdrop {
+      display: none;
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.65);
+      backdrop-filter: blur(4px);
+      align-items: center;
+      justify-content: center;
+      z-index: 50;
+    }
+    .modal-box {
+      width: 320px;
+      background: #141724;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 10px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.7);
+    }
+    .modal-list {
+      max-height: 180px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .file-item {
+      padding: 6px 8px;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.04);
+      cursor: pointer;
+      font-size: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .file-item:hover { background: rgba(255, 255, 255, 0.1); color: #fff; }
+  </style>
+</head>
+<body>
+  <!-- Top Menu Bar -->
+  <div class="menubar">
+    <div class="left-actions">
+      <div class="file-tab">
+        <span id="tabFileName">untitled.js</span>
+        <span class="dirty-dot" id="dirtyDot"></span>
+      </div>
+      <button class="btn" onclick="openVfsModal()">📂 Open VFS</button>
+      <button class="btn primary" onclick="saveFile()">💾 Save</button>
+      <button class="btn" onclick="toggleFindBar()">🔍 Find</button>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <select id="langSelect" onchange="changeLanguage(this.value)">
+        <option value="javascript">JavaScript</option>
+        <option value="html">HTML</option>
+        <option value="css">CSS</option>
+        <option value="json">JSON</option>
+        <option value="markdown">Markdown</option>
+        <option value="python">Python</option>
+        <option value="plaintext">Plain Text</option>
+      </select>
+      <select id="indentSelect" onchange="changeIndent(this.value)">
+        <option value="2">2 Spaces</option>
+        <option value="4">4 Spaces</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Find & Replace Bar -->
+  <div class="find-bar" id="findBar">
+    <input type="text" class="find-input" id="findInput" placeholder="Find...">
+    <input type="text" class="find-input" id="replaceInput" placeholder="Replace with...">
+    <button class="btn" onclick="findNext()">Next</button>
+    <button class="btn" onclick="replaceOne()">Replace</button>
+    <button class="btn" onclick="replaceAll()">All</button>
+    <button class="btn" onclick="toggleFindBar()" style="margin-left:auto;">✕</button>
+  </div>
+
+  <!-- Code View Area -->
+  <div class="editor-wrapper">
+    <div class="line-numbers" id="lineNumbers">1</div>
+    <textarea 
+      class="code-area" 
+      id="codeArea" 
+      spellcheck="false"
+      placeholder="// Start writing or open a file from Loom Virtual File System..."
+    ></textarea>
+  </div>
+
+  <!-- Status Bar -->
+  <div class="statusbar">
+    <div id="statusPath">/home/user/untitled.js</div>
+    <div style="display: flex; gap: 14px;">
+      <span id="cursorPos">Ln 1, Col 1</span>
+      <span id="lineCount">1 line</span>
+      <span id="statusEncoding">UTF-8</span>
+    </div>
+  </div>
+
+  <!-- Open File Modal -->
+  <div class="modal-backdrop" id="openModal">
+    <div class="modal-box">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-size: 13px; font-weight: 600;">Open from Virtual File System</span>
+        <button onclick="closeVfsModal()" style="background:none; border:none; color:#64748b; cursor:pointer;">✕</button>
+      </div>
+      <div class="modal-list" id="modalFileList">
+        <div style="font-size:12px; color:#64748b;">Loading files...</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/apps/loom-sdk.js"></script>
+  <script>
+    const codeArea = document.getElementById('codeArea');
+    const lineNumbers = document.getElementById('lineNumbers');
+    const tabFileName = document.getElementById('tabFileName');
+    const dirtyDot = document.getElementById('dirtyDot');
+    const cursorPos = document.getElementById('cursorPos');
+    const lineCount = document.getElementById('lineCount');
+    const statusPath = document.getElementById('statusPath');
+    const findBar = document.getElementById('findBar');
+    const findInput = document.getElementById('findInput');
+    const replaceInput = document.getElementById('replaceInput');
+
+    let currentFile = {
+      id: null,
+      name: 'untitled.js',
+      path: '/home/user/untitled.js',
+      isDirty: false
+    };
+
+    // Default sample code
+    const initialCode = `// Welcome to Loom OS Code Editor\n// Backed by Virtual File System and IndexedDB\n\nfunction calculateMetrics(items) {\n  const sum = items.reduce((acc, curr) => acc + curr, 0);\n  const average = sum / items.length;\n  return { sum, average };\n}\n\nconsole.log(calculateMetrics([10, 20, 30, 40, 50]));\n`;
+    codeArea.value = initialCode;
+
+    // Initialize SDK
+    LoomSDK.init().then(() => {
+      loadInitialDraft();
+    }).catch(e => {
+      console.warn('SDK init standalone:', e);
+    });
+
+    // Update Line Numbers & Cursor Stats
+    function updateEditorMeta() {
+      const lines = codeArea.value.split('\n').length;
+      let lineStr = '';
+      for (let i = 1; i <= lines; i++) lineStr += i + '\n';
+      lineNumbers.textContent = lineStr;
+      lineCount.textContent = `${lines} line${lines === 1 ? '' : 's'}`;
+
+      // Cursor position
+      const selStart = codeArea.selectionStart;
+      const textBefore = codeArea.value.substring(0, selStart);
+      const curLine = textBefore.split('\n').length;
+      const curCol = selStart - textBefore.lastIndexOf('\n');
+      cursorPos.textContent = `Ln ${curLine}, Col ${curCol}`;
+    }
+
+    codeArea.addEventListener('input', () => {
+      setDirty(true);
+      updateEditorMeta();
+    });
+
+    codeArea.addEventListener('keyup', updateEditorMeta);
+    codeArea.addEventListener('click', updateEditorMeta);
+
+    // Synchronize scroll between line numbers and code area
+    codeArea.addEventListener('scroll', () => {
+      lineNumbers.scrollTop = codeArea.scrollTop;
+    });
+
+    // Indentation Tab Support
+    codeArea.addEventListener('keydown', (e) => {
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        const indentSize = parseInt(document.getElementById('indentSelect').value, 10);
+        const indent = ' '.repeat(indentSize);
+        const start = codeArea.selectionStart;
+        const end = codeArea.selectionEnd;
+        codeArea.value = codeArea.value.substring(0, start) + indent + codeArea.value.substring(end);
+        codeArea.selectionStart = codeArea.selectionEnd = start + indentSize;
+        setDirty(true);
+        updateEditorMeta();
+      } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        saveFile();
+      } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
+        e.preventDefault();
+        toggleFindBar();
+      }
+    });
+
+    function setDirty(dirty) {
+      currentFile.isDirty = dirty;
+      dirtyDot.className = dirty ? 'dirty-dot active' : 'dirty-dot';
+    }
+
+    function toggleFindBar() {
+      const isVisible = findBar.style.display === 'flex';
+      findBar.style.display = isVisible ? 'none' : 'flex';
+      if (!isVisible) findInput.focus();
+    }
+
+    function findNext() {
+      const query = findInput.value;
+      if (!query) return;
+      const text = codeArea.value;
+      const startIdx = codeArea.selectionEnd;
+      let foundIdx = text.indexOf(query, startIdx);
+      if (foundIdx === -1) {
+        foundIdx = text.indexOf(query, 0); // wrap around
+      }
+      if (foundIdx !== -1) {
+        codeArea.setSelectionRange(foundIdx, foundIdx + query.length);
+        codeArea.focus();
+        updateEditorMeta();
+      } else {
+        alert('Phrase not found');
+      }
+    }
+
+    function replaceOne() {
+      const query = findInput.value;
+      const replacement = replaceInput.value;
+      const selStart = codeArea.selectionStart;
+      const selEnd = codeArea.selectionEnd;
+      if (codeArea.value.substring(selStart, selEnd) === query) {
+        codeArea.value = codeArea.value.substring(0, selStart) + replacement + codeArea.value.substring(selEnd);
+        codeArea.setSelectionRange(selStart, selStart + replacement.length);
+        setDirty(true);
+        updateEditorMeta();
+        findNext();
+      } else {
+        findNext();
+      }
+    }
+
+    function replaceAll() {
+      const query = findInput.value;
+      const replacement = replaceInput.value;
+      if (!query) return;
+      codeArea.value = codeArea.value.split(query).join(replacement);
+      setDirty(true);
+      updateEditorMeta();
+    }
+
+    function changeLanguage(lang) {
+      let ext = 'js';
+      if (lang === 'html') ext = 'html';
+      else if (lang === 'css') ext = 'css';
+      else if (lang === 'json') ext = 'json';
+      else if (lang === 'markdown') ext = 'md';
+      else if (lang === 'python') ext = 'py';
+      else if (lang === 'plaintext') ext = 'txt';
+
+      const baseName = currentFile.name.split('.')[0] || 'untitled';
+      currentFile.name = `${baseName}.${ext}`;
+      tabFileName.textContent = currentFile.name;
+      statusPath.textContent = `/home/user/${currentFile.name}`;
+    }
+
+    function changeIndent(spaces) {
+      codeArea.style.tabSize = spaces;
+    }
+
+    // VFS Integration
+    async function openVfsModal() {
+      document.getElementById('openModal').style.display = 'flex';
+      const list = document.getElementById('modalFileList');
+      list.innerHTML = '<div style="font-size:12px; color:#64748b;">Reading VFS...</div>';
+
+      try {
+        const files = await LoomSDK.vfs.listFiles('/');
+        if (!files || files.length === 0) {
+          list.innerHTML = '<div style="font-size:12px; color:#94a3b8;">No files in VFS yet</div>';
+          return;
+        }
+        list.innerHTML = files.map(f => `
+          <div class="file-item" onclick="loadVfsFile('${f.path}', '${f.name}')">
+            <span>📄 ${f.name}</span>
+            <span style="font-size:10px; color:#64748b;">${(f.size || 0)} B</span>
+          </div>
+        `).join('');
+      } catch (e) {
+        list.innerHTML = `<div style="color:#ef4444; font-size:12px;">VFS error: ${e.message}</div>`;
+      }
+    }
+
+    function closeVfsModal() {
+      document.getElementById('openModal').style.display = 'none';
+    }
+
+    async function loadVfsFile(path, name) {
+      try {
+        const content = await LoomSDK.vfs.readFile(path);
+        codeArea.value = typeof content === 'string' ? content : JSON.stringify(content, null, 2);
+        currentFile.name = name;
+        currentFile.path = path;
+        tabFileName.textContent = name;
+        statusPath.textContent = path;
+        setDirty(false);
+        updateEditorMeta();
+        closeVfsModal();
+      } catch (err) {
+        alert('Could not read file: ' + err.message);
+      }
+    }
+
+    async function saveFile() {
+      const fileName = currentFile.name;
+      const path = currentFile.path || `/home/user/${fileName}`;
+      try {
+        await LoomSDK.vfs.writeFile(path, codeArea.value);
+        setDirty(false);
+        tabFileName.textContent = fileName;
+        statusPath.textContent = path;
+        
+        // Visual indicator
+        const origText = tabFileName.textContent;
+        tabFileName.textContent = '✓ Saved!';
+        setTimeout(() => tabFileName.textContent = fileName, 1500);
+      } catch (e) {
+        alert('Failed to save to VFS: ' + e.message);
+      }
+    }
+
+    async function loadInitialDraft() {
+      updateEditorMeta();
+    }
+
+    updateEditorMeta();
+  </script>
+</body>
+</html>

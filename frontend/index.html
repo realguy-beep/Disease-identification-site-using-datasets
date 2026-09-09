@@ -399,7 +399,8 @@
   </footer>
 
   <script>
-    const API_BASE = window.location.origin;
+    // Set window.__API_BASE_URL__ before this script when the frontend is hosted separately.
+    const API_BASE = (window.__API_BASE_URL__ || window.location.origin).replace(/\/$/, "");
     let allSymptoms = [];
     const selectedSymptoms = new Set();
     let currentUploadedEyeFile = null;

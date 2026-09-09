@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Loom Weather</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #090c15;
+      color: #f1f5f9;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      user-select: none;
+    }
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 14px;
+      background: rgba(0, 0, 0, 0.25);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      gap: 10px;
+    }
+    .city-select {
+      background: #141724;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 6px;
+      color: #fff;
+      font-size: 12px;
+      padding: 5px 10px;
+      outline: none;
+    }
+    .search-input {
+      background: #141724;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 6px;
+      color: #fff;
+      font-size: 12px;
+      padding: 5px 10px;
+      outline: none;
+      width: 140px;
+    }
+    .search-input:focus { border-color: #38bdf8; }
+
+    .btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #cbd5e1;
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      cursor: pointer;
+    }
+    .btn:hover { background: rgba(255, 255, 255, 0.15); color: #fff; }
+
+    .content {
+      flex: 1;
+      padding: 16px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    /* Current Conditions Hero Card */
+    .hero-card {
+      background: linear-gradient(135deg, rgba(56, 189, 248, 0.12) 0%, rgba(99, 102, 241, 0.06) 100%);
+      border: 1px solid rgba(56, 189, 248, 0.2);
+      border-radius: 12px;
+      padding: 16px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero-left {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .hero-city {
+      font-size: 20px;
+      font-weight: 700;
+      color: #fff;
+    }
+    .hero-cond {
+      font-size: 12px;
+      color: #94a3b8;
+    }
+    .hero-temp {
+      font-size: 44px;
+      font-weight: 800;
+      letter-spacing: -2px;
+      color: #fff;
+      margin-top: 4px;
+    }
+    .hero-hilo {
+      font-size: 11px;
+      color: #cbd5e1;
+    }
+    .hero-icon {
+      font-size: 54px;
+      filter: drop-shadow(0 0 16px rgba(56, 189, 248, 0.4));
+    }
+
+    /* Metrics Grid */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+    .metric-card {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      border-radius: 8px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .metric-label { font-size: 10px; color: #64748b; text-transform: uppercase; font-weight: 600; }
+    .metric-val { font-size: 15px; font-weight: 700; color: #f1f5f9; font-family: monospace; }
+    .metric-sub { font-size: 9.5px; color: #94a3b8; }
+
+    /* 5-Day Forecast */
+    .section-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #64748b;
+      margin-bottom: 2px;
+    }
+    .forecast-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+    }
+    .forecast-card {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 8px;
+      padding: 10px 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      text-align: center;
+      transition: background 0.15s;
+    }
+    .forecast-card:hover { background: rgba(255, 255, 255, 0.07); }
+    .forecast-day { font-size: 11px; font-weight: 600; color: #94a3b8; }
+    .forecast-icon { font-size: 24px; margin: 2px 0; }
+    .forecast-temp { font-size: 13px; font-weight: 700; color: #fff; font-family: monospace; }
+    .forecast-low { font-size: 10px; color: #64748b; font-family: monospace; }
+  </style>
+</head>
+<body>
+  <div class="top-bar">
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <span style="font-size: 14px;">🌦️</span>
+      <select id="citySelect" class="city-select" onchange="changeCity(this.value)">
+        <option value="San Francisco">San Francisco, CA</option>
+        <option value="New York">New York, NY</option>
+        <option value="London">London, UK</option>
+        <option value="Tokyo">Tokyo, Japan</option>
+        <option value="Paris">Paris, France</option>
+        <option value="Sydney">Sydney, Australia</option>
+      </select>
+    </div>
+
+    <div style="display: flex; gap: 6px;">
+      <input type="text" id="customCityInput" class="search-input" placeholder="Search city..." onkeydown="if(event.key==='Enter') searchCustomCity()">
+      <button class="btn" onclick="toggleUnit()" id="unitBtn">°C</button>
+      <button class="btn" onclick="refreshWeather()">↻</button>
+    </div>
+  </div>
+
+  <div class="content">
+    <!-- Hero Card -->
+    <div class="hero-card">
+      <div class="hero-left">
+        <div class="hero-city" id="heroCity">San Francisco</div>
+        <div class="hero-cond" id="heroCond">Partly Cloudy • High Wind</div>
+        <div class="hero-temp" id="heroTemp">18°</div>
+        <div class="hero-hilo" id="heroHiLo">H: 21° • L: 13° • Feels like 17°</div>
+      </div>
+      <div class="hero-icon" id="heroIcon">⛅</div>
+    </div>
+
+    <!-- Weather Metrics Grid -->
+    <div>
+      <div class="section-title">Atmospheric Conditions</div>
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <div class="metric-label">Humidity</div>
+          <div class="metric-val" id="valHumidity">68%</div>
+          <div class="metric-sub">Dew point 11°</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Wind Speed</div>
+          <div class="metric-val" id="valWind">19 km/h</div>
+          <div class="metric-sub">WNW Gusts 24</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">UV Index</div>
+          <div class="metric-val" id="valUV">4 / 11</div>
+          <div class="metric-sub">Moderate</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Air Quality</div>
+          <div class="metric-val" id="valAQI">24 AQI</div>
+          <div class="metric-sub" style="color:#10b981;">Good</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5-Day Forecast -->
+    <div>
+      <div class="section-title">5-Day Forecast</div>
+      <div class="forecast-grid" id="forecastGrid"></div>
+    </div>
+  </div>
+
+  <script src="/apps/loom-sdk.js"></script>
+  <script>
+    let currentCity = 'San Francisco';
+    let unit = 'C'; // 'C' or 'F'
+
+    // Realistic weather model database
+    const WEATHER_DATA = {
+      'San Francisco': {
+        cond: 'Partly Cloudy • Coastal Breeze',
+        tempC: 18,
+        highC: 21,
+        lowC: 13,
+        icon: '⛅',
+        humidity: '68%',
+        wind: '19 km/h',
+        uv: '4 / 11',
+        aqi: '24 (Good)',
+        forecast: [
+          { day: 'Mon', icon: '⛅', hi: 20, lo: 13 },
+          { day: 'Tue', icon: '☀️', hi: 22, lo: 14 },
+          { day: 'Wed', icon: '🌤️', hi: 21, lo: 12 },
+          { day: 'Thu', icon: '☁️', hi: 18, lo: 13 },
+          { day: 'Fri', icon: '🌦️', hi: 17, lo: 11 }
+        ]
+      },
+      'New York': {
+        cond: 'Clear Sky • Mild Humidity',
+        tempC: 24,
+        highC: 27,
+        lowC: 18,
+        icon: '☀️',
+        humidity: '52%',
+        wind: '14 km/h',
+        uv: '7 / 11',
+        aqi: '38 (Good)',
+        forecast: [
+          { day: 'Mon', icon: '☀️', hi: 26, lo: 18 },
+          { day: 'Tue', icon: '🌤️', hi: 28, lo: 19 },
+          { day: 'Wed', icon: '⛈️', hi: 23, lo: 17 },
+          { day: 'Thu', icon: '🌧️', hi: 21, lo: 16 },
+          { day: 'Fri', icon: '☀️', hi: 25, lo: 17 }
+        ]
+      },
+      'London': {
+        cond: 'Overcast • Light Drizzle',
+        tempC: 16,
+        highC: 19,
+        lowC: 12,
+        icon: '🌧️',
+        humidity: '82%',
+        wind: '22 km/h',
+        uv: '3 / 11',
+        aqi: '19 (Good)',
+        forecast: [
+          { day: 'Mon', icon: '🌧️', hi: 18, lo: 12 },
+          { day: 'Tue', icon: '☁️', hi: 19, lo: 11 },
+          { day: 'Wed', icon: '🌦️', hi: 17, lo: 10 },
+          { day: 'Thu', icon: '🌤️', hi: 20, lo: 13 },
+          { day: 'Fri', icon: '☁️', hi: 18, lo: 12 }
+        ]
+      },
+      'Tokyo': {
+        cond: 'Sunny • Gentle Breeze',
+        tempC: 26,
+        highC: 29,
+        lowC: 21,
+        icon: '☀️',
+        humidity: '58%',
+        wind: '11 km/h',
+        uv: '8 / 11',
+        aqi: '32 (Good)',
+        forecast: [
+          { day: 'Mon', icon: '☀️', hi: 29, lo: 21 },
+          { day: 'Tue', icon: '☀️', hi: 30, lo: 22 },
+          { day: 'Wed', icon: '🌤️', hi: 28, lo: 21 },
+          { day: 'Thu', icon: '⛅', hi: 27, lo: 20 },
+          { day: 'Fri', icon: '🌧️', hi: 24, lo: 19 }
+        ]
+      },
+      'Paris': {
+        cond: 'Scattered Clouds',
+        tempC: 21,
+        highC: 24,
+        lowC: 14,
+        icon: '🌤️',
+        humidity: '60%',
+        wind: '16 km/h',
+        uv: '5 / 11',
+        aqi: '28 (Good)',
+        forecast: [
+          { day: 'Mon', icon: '🌤️', hi: 23, lo: 14 },
+          { day: 'Tue', icon: '⛅', hi: 22, lo: 13 },
+          { day: 'Wed', icon: '☀️', hi: 25, lo: 15 },
+          { day: 'Thu', icon: '🌦️', hi: 20, lo: 12 },
+          { day: 'Fri', icon: '☀️', hi: 24, lo: 14 }
+        ]
+      },
+      'Sydney': {
+        cond: 'Clear • Crisp Air',
+        tempC: 19,
+        highC: 22,
+        lowC: 11,
+        icon: '☀️',
+        humidity: '48%',
+        wind: '18 km/h',
+        uv: '6 / 11',
+        aqi: '15 (Very Good)',
+        forecast: [
+          { day: 'Mon', icon: '☀️', hi: 22, lo: 11 },
+          { day: 'Tue', icon: '☀️', hi: 23, lo: 12 },
+          { day: 'Wed', icon: '🌤️', hi: 21, lo: 13 },
+          { day: 'Thu', icon: '🌧️', hi: 18, lo: 10 },
+          { day: 'Fri', icon: '☀️', hi: 20, lo: 11 }
+        ]
+      }
+    };
+
+    function toDisplayTemp(c) {
+      if (unit === 'F') {
+        return Math.round((c * 9/5) + 32) + '°';
+      }
+      return `${c}°`;
+    }
+
+    function renderWeather() {
+      const data = WEATHER_DATA[currentCity] || WEATHER_DATA['San Francisco'];
+      document.getElementById('heroCity').textContent = currentCity;
+      document.getElementById('heroCond').textContent = data.cond;
+      document.getElementById('heroTemp').textContent = toDisplayTemp(data.tempC);
+      document.getElementById('heroHiLo').textContent = 
+        `H: ${toDisplayTemp(data.highC)} • L: ${toDisplayTemp(data.lowC)} • Feels like ${toDisplayTemp(data.tempC - 1)}`;
+      document.getElementById('heroIcon').textContent = data.icon;
+
+      document.getElementById('valHumidity').textContent = data.humidity;
+      document.getElementById('valWind').textContent = data.wind;
+      document.getElementById('valUV').textContent = data.uv;
+      document.getElementById('valAQI').textContent = data.aqi;
+
+      // Render 5-Day Forecast
+      const grid = document.getElementById('forecastGrid');
+      grid.innerHTML = data.forecast.map(f => `
+        <div class="forecast-card">
+          <div class="forecast-day">${f.day}</div>
+          <div class="forecast-icon">${f.icon}</div>
+          <div class="forecast-temp">${toDisplayTemp(f.hi)}</div>
+          <div class="forecast-low">${toDisplayTemp(f.lo)}</div>
+        </div>
+      `).join('');
+    }
+
+    function changeCity(city) {
+      currentCity = city;
+      renderWeather();
+    }
+
+    function searchCustomCity() {
+      const val = document.getElementById('customCityInput').value.trim();
+      if (!val) return;
+      currentCity = val;
+      // Synthesize realistic model for custom search city if not in hardcoded dict
+      if (!WEATHER_DATA[val]) {
+        WEATHER_DATA[val] = {
+          cond: 'Clear Sky • Ambient Air',
+          tempC: 22,
+          highC: 25,
+          lowC: 15,
+          icon: '☀️',
+          humidity: '55%',
+          wind: '14 km/h',
+          uv: '6 / 11',
+          aqi: '30 (Good)',
+          forecast: [
+            { day: 'Mon', icon: '☀️', hi: 24, lo: 15 },
+            { day: 'Tue', icon: '🌤️', hi: 25, lo: 16 },
+            { day: 'Wed', icon: '⛅', hi: 23, lo: 14 },
+            { day: 'Thu', icon: '🌧️', hi: 20, lo: 13 },
+            { day: 'Fri', icon: '☀️', hi: 23, lo: 15 }
+          ]
+        };
+      }
+      renderWeather();
+    }
+
+    function toggleUnit() {
+      unit = unit === 'C' ? 'F' : 'C';
+      document.getElementById('unitBtn').textContent = `°${unit}`;
+      renderWeather();
+    }
+
+    function refreshWeather() {
+      renderWeather();
+    }
+
+    renderWeather();
+  </script>
+</body>
+</html>

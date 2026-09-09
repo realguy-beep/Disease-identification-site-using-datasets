@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Task Manager</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #0d0f18;
+      color: #e2e8f0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      padding: 14px;
+      gap: 12px;
+      font-size: 12px;
+      overflow: hidden;
+    }
+    .metrics-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .metric-card {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 10px;
+      padding: 10px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .metric-title { font-size: 11px; color: #94a3b8; font-weight: 500; }
+    .metric-value { font-size: 18px; font-weight: 700; color: #38bdf8; font-family: monospace; }
+    .progress-track {
+      height: 4px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: #38bdf8;
+      transition: width 0.3s;
+    }
+    .process-table-container {
+      flex: 1;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 10px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+    }
+    th {
+      padding: 8px 12px;
+      background: rgba(255, 255, 255, 0.04);
+      color: #94a3b8;
+      font-size: 11px;
+      font-weight: 600;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    td {
+      padding: 8px 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      color: #cbd5e1;
+    }
+    tr.selected {
+      background: rgba(99, 102, 241, 0.15);
+    }
+    tr:hover:not(.selected) {
+      background: rgba(255, 255, 255, 0.03);
+    }
+    .footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 4px;
+    }
+    .btn {
+      background: #ef4444;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 6px 14px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn:hover { background: #dc2626; }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  </style>
+</head>
+<body>
+  <div class="metrics-row">
+    <div class="metric-card">
+      <span class="metric-title">Simulated CPU Activity</span>
+      <span class="metric-value" id="cpuVal">8.4%</span>
+      <div class="progress-track">
+        <div class="progress-fill" id="cpuBar" style="width: 8%;"></div>
+      </div>
+    </div>
+    <div class="metric-card">
+      <span class="metric-title">Estimated Memory Usage</span>
+      <span class="metric-value" id="memVal">142 MB</span>
+      <div class="progress-track">
+        <div class="progress-fill" id="memBar" style="width: 28%; background: #a855f7;"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="process-table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>Process Name</th>
+          <th>PID</th>
+          <th>CPU</th>
+          <th>Memory</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody id="procRows">
+        <!-- Rows populated dynamically -->
+      </tbody>
+    </table>
+  </div>
+
+  <div class="footer">
+    <span id="procSummary" style="color: #64748b;">4 running processes</span>
+    <button class="btn" id="btnKill" disabled onclick="killSelectedProcess()">End Process</button>
+  </div>
+
+  <script src="/apps/loom-sdk.js"></script>
+  <script>
+    let processes = [
+      { id: 'loom.shell', name: 'Loom OS Shell', pid: 100, cpu: 2.1, mem: 48, status: 'Active (Host)' },
+      { id: 'loom.notes', name: 'Notes Canvas', pid: 101, cpu: 1.4, mem: 24, status: 'Running' },
+      { id: 'loom.files', name: 'Virtual Files', pid: 102, cpu: 0.8, mem: 22, status: 'Running' },
+      { id: 'loom.taskmanager', name: 'Task Manager', pid: 103, cpu: 4.1, mem: 18, status: 'Active (Focused)' }
+    ];
+    let selectedPid = null;
+
+    LoomSDK.init().catch(() => {});
+
+    function render() {
+      const tbody = document.getElementById('procRows');
+      tbody.innerHTML = '';
+
+      processes.forEach(p => {
+        const tr = document.createElement('tr');
+        if (selectedPid === p.pid) tr.className = 'selected';
+
+        tr.innerHTML = `
+          <td><strong>${p.name}</strong></td>
+          <td><code style="color:#94a3b8;">${p.pid}</code></td>
+          <td>${p.cpu.toFixed(1)}%</td>
+          <td>${p.mem} MB</td>
+          <td><span style="color:${p.status.includes('Active') ? '#10b981' : '#94a3b8'};">${p.status}</span></td>
+        `;
+
+        tr.onclick = () => {
+          selectedPid = p.pid;
+          document.getElementById('btnKill').disabled = p.pid === 100; // cannot kill host shell
+          render();
+        };
+
+        tbody.appendChild(tr);
+      });
+
+      document.getElementById('procSummary').textContent = `${processes.length} running processes`;
+    }
+
+    // Jitter metrics for realistic OS monitor feel
+    setInterval(() => {
+      const totalCpu = (5 + Math.random() * 8).toFixed(1);
+      const totalMem = Math.round(135 + Math.random() * 15);
+
+      document.getElementById('cpuVal').textContent = totalCpu + '%';
+      document.getElementById('cpuBar').style.width = Math.min(100, totalCpu * 4) + '%';
+
+      document.getElementById('memVal').textContent = totalMem + ' MB';
+      document.getElementById('memBar').style.width = Math.round((totalMem / 500) * 100) + '%';
+    }, 2000);
+
+    function killSelectedProcess() {
+      if (!selectedPid) return;
+      const p = processes.find(proc => proc.pid === selectedPid);
+      if (!p) return;
+
+      // Notify shell to close corresponding card
+      window.parent.postMessage({
+        type: 'LOOM_FORCE_KILL_APP',
+        appId: p.id
+      }, '*');
+
+      processes = processes.filter(proc => proc.pid !== selectedPid);
+      selectedPid = null;
+      document.getElementById('btnKill').disabled = true;
+      render();
+    }
+
+    render();
+  </script>
+</body>
+</html>
+

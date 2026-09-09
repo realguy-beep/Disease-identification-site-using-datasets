@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Loom OS Terminal</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #07090e;
+      color: #e2e8f0;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      padding: 12px;
+      font-size: 12.5px;
+      overflow: hidden;
+    }
+    .terminal-output {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      line-height: 1.5;
+    }
+    .line {
+      word-break: break-all;
+      white-space: pre-wrap;
+    }
+    .line.prompt-echo { color: #818cf8; }
+    .line.success { color: #34d399; }
+    .line.error { color: #f87171; }
+    .line.info { color: #38bdf8; }
+    .line.warn { color: #fbbf24; }
+    .prompt-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding-top: 8px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      margin-top: 4px;
+    }
+    .prompt-label {
+      color: #10b981;
+      font-weight: 600;
+    }
+    input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: #f8fafc;
+      font-family: inherit;
+      font-size: inherit;
+      outline: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="terminal-output" id="output">
+    <div class="line info">Loom OS Safe Shell [Version 2.0.0]</div>
+    <div class="line">Type "help" for a list of available OS commands.</div>
+    <div class="line info">--------------------------------------------------</div>
+  </div>
+
+  <div class="prompt-bar">
+    <span class="prompt-label">loom:~$</span>
+    <input type="text" id="cmdInput" autofocus autocomplete="off" spellcheck="false">
+  </div>
+
+  <script src="/apps/loom-sdk.js"></script>
+  <script>
+    const output = document.getElementById('output');
+    const input = document.getElementById('cmdInput');
+    let history = [];
+    let historyIdx = -1;
+
+    LoomSDK.init().catch(() => {});
+
+    function print(text, type = '') {
+      const div = document.createElement('div');
+      div.className = 'line ' + type;
+      div.textContent = text;
+      output.appendChild(div);
+      output.scrollTop = output.scrollHeight;
+    }
+
+    input.addEventListener('keydown', async (e) => {
+      if (e.key === 'Enter') {
+        const raw = input.value.trim();
+        if (!raw) return;
+        history.push(raw);
+        historyIdx = history.length;
+        print(`loom:~$ ${raw}`, 'prompt-echo');
+        input.value = '';
+        await executeCommand(raw);
+      } else if (e.key === 'ArrowUp') {
+        if (historyIdx > 0) {
+          historyIdx--;
+          input.value = history[historyIdx] || '';
+        }
+      } else if (e.key === 'ArrowDown') {
+        if (historyIdx < history.length - 1) {
+          historyIdx++;
+          input.value = history[historyIdx] || '';
+        } else {
+          historyIdx = history.length;
+          input.value = '';
+        }
+      }
+    });
+
+    async function executeCommand(commandStr) {
+      const parts = commandStr.trim().split(/\s+/);
+      const cmd = parts[0].toLowerCase();
+      const args = parts.slice(1);
+
+      switch (cmd) {
+        case 'help':
+          print('Available Loom OS commands:');
+          print('  ls              List virtual storage files and folders');
+          print('  cat <file>      Display contents of a virtual text file');
+          print('  touch <file>    Create an empty virtual file');
+          print('  mkdir <dir>     Create a virtual directory');
+          print('  rm <name>       Move virtual file to trash');
+          print('  ps              List running process cards');
+          print('  open <appId>    Launch an installed app (e.g. open loom.notes)');
+          print('  quota           Check VFS disk space quota');
+          print('  zones           List active canvas zones');
+          print('  clear           Clear the terminal screen');
+          print('  echo <text>     Print text to screen');
+          break;
+
+        case 'clear':
+          output.innerHTML = '';
+          break;
+
+        case 'echo':
+          print(args.join(' '));
+          break;
+
+        case 'quota':
+          try {
+            window.parent.postMessage({
+              jsonrpc: '2.0',
+              id: 'term_' + Date.now(),
+              token: new URLSearchParams(location.search).get('token'),
+              appId: 'loom.terminal',
+              method: 'vfs:quota',
+              params: {}
+            }, '*');
+          } catch (e) {
+            print('Storage Quota: 50 MB limit active.', 'info');
+          }
+          break;
+
+        case 'ls':
+          window.parent.postMessage({
+            jsonrpc: '2.0',
+            id: 'term_ls_' + Date.now(),
+            token: new URLSearchParams(location.search).get('token'),
+            appId: 'loom.terminal',
+            method: 'vfs:list',
+            params: {}
+          }, '*');
+          break;
+
+        case 'touch':
+          if (!args[0]) return print('Usage: touch <filename>', 'error');
+          window.parent.postMessage({
+            jsonrpc: '2.0',
+            id: 'term_touch_' + Date.now(),
+            token: new URLSearchParams(location.search).get('token'),
+            appId: 'loom.terminal',
+            method: 'vfs:createFile',
+            params: { name: args[0], content: '' }
+          }, '*');
+          print(`Created file "${args[0]}"`, 'success');
+          break;
+
+        case 'mkdir':
+          if (!args[0]) return print('Usage: mkdir <dirname>', 'error');
+          window.parent.postMessage({
+            jsonrpc: '2.0',
+            id: 'term_mkdir_' + Date.now(),
+            token: new URLSearchParams(location.search).get('token'),
+            appId: 'loom.terminal',
+            method: 'vfs:createFolder',
+            params: { name: args[0] }
+          }, '*');
+          print(`Created directory "${args[0]}"`, 'success');
+          break;
+
+        case 'ps':
+          print('PID   APP_ID             STATUS', 'info');
+          print('101   loom.terminal      RUNNING (active)', 'success');
+          print('102   loom.notes         RUNNING', 'success');
+          print('103   loom.files         IDLE', 'info');
+          break;
+
+        case 'open':
+          if (!args[0]) return print('Usage: open <appId>', 'error');
+          window.parent.postMessage({
+            type: 'LOOM_OPEN_APP',
+            appId: args[0]
+          }, '*');
+          print(`Launching app "${args[0]}"...`, 'info');
+          break;
+
+        case 'zones':
+          print('Available Zones:');
+          print('  * morning (05:00 - 12:00)');
+          print('  * focus   (12:00 - 18:00)');
+          print('  * evening (18:00 - 05:00)');
+          break;
+
+        default:
+          print(`Unknown command "${cmd}". Type "help" for a list.`, 'error');
+      }
+    }
+
+    window.addEventListener('message', (e) => {
+      const data = e.data;
+      if (!data || data.jsonrpc !== '2.0') return;
+
+      if (data.id && data.id.startsWith('term_ls_') && data.result) {
+        const items = data.result.items || [];
+        if (items.length === 0) {
+          print('(empty directory)', 'info');
+        } else {
+          items.forEach(i => {
+            const prefix = i.type === 'folder' ? '[DIR] ' : '      ';
+            print(`${prefix} ${i.name.padEnd(24)} ${(i.size/1024).toFixed(1)} KB`);
+          });
+        }
+      } else if (data.id && data.id.startsWith('term_') && data.result && data.result.usedBytes !== undefined) {
+        const q = data.result;
+        print(`VFS Storage Quota: ${(q.usedBytes/1024).toFixed(1)} KB used / ${(q.maxBytes/(1024*1024)).toFixed(0)} MB total (${q.fileCount} files)`);
+      }
+    });
+  </script>
+</body>
+</html>
+

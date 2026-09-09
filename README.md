@@ -27,3 +27,35 @@ A multi-modal clinical AI web application featuring general multi-class disease 
 5. **👁️ Computer Vision Eye Scan Upload**: Drag-and-drop anterior eye or fundus scans with immediate differential disease probabilities and guidelines.
 6. **📄 One-Click Printable Doctor Consultation Report**: Cleanly formatted printable medical summary to take to physician consultations.
 7. **📜 SQLite Audit Trail**: Persistent logging of inference requests in `predictions.db`.
+
+## Deployment
+
+The simplest deployment is a single Docker service. The FastAPI app serves both the API and `frontend/index.html`, so the browser uses the same origin for requests.
+
+### Render
+
+1. Push this repository to GitHub, including the Git LFS model objects.
+2. In Render, choose **New > Blueprint** and select the repository.
+3. Render will detect `render.yaml`, build the Docker image, and use `/health` as the health check.
+4. Open the generated service URL. The frontend and API are deployed together.
+
+No `.env` file should be committed. Render injects `PORT` automatically, and this same-origin deployment does not need a CORS origin. If you later host the frontend separately, set `ALLOWED_ORIGINS` to the exact frontend URL in Render's environment settings.
+
+```bash
+docker build -t medipredict .
+docker run --rm -p 8000:8000 -e PORT=8000 medipredict
+```
+
+Open `http://localhost:8000` and verify `http://localhost:8000/health`. On a hosting platform, deploy the repository as a Docker service and use the platform-provided `PORT` value. The health check path is `/health`.
+
+If the frontend is deployed separately as static files, set `window.__API_BASE_URL__` before the inline script in `frontend/index.html` to the public backend URL, for example:
+
+```html
+<script>
+	window.__API_BASE_URL__ = "https://api.example.com";
+</script>
+```
+
+Then configure the backend's `ALLOWED_ORIGINS` environment variable with the exact frontend origin, for example `https://app.example.com`. Do not use a trailing slash in either URL.
+
+SQLite data is stored in `predictions.db`. On hosts with ephemeral disks, use a persistent volume or replace the audit database with a managed database before relying on prediction history.

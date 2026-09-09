@@ -1,0 +1,104 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --loom-bg: #090a0f;
+    --loom-surface: #12141e;
+    --loom-surface-hover: #1a1d2c;
+    --loom-border: rgba(255, 255, 255, 0.08);
+    --loom-accent: #6366f1;
+    --loom-accent-glow: rgba(99, 102, 241, 0.35);
+    --loom-text: #f3f4f6;
+    --loom-muted: #9ca3af;
+    --loom-window-radius: 16px;
+    --loom-window-blur: 16px;
+    --loom-window-opacity: 0.94;
+    --loom-anim-speed: 200ms;
+    --loom-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+
+  body {
+    background-color: var(--loom-bg);
+    color: var(--loom-text);
+    font-family: var(--loom-font);
+    overflow: hidden;
+    user-select: none;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Accessibility Focus Rings */
+  *:focus-visible {
+    outline: 2px solid var(--loom-accent) !important;
+    outline-offset: 2px !important;
+  }
+}
+
+/* UI Font Scaling */
+html[data-scale="sm"] { font-size: 14px; }
+html[data-scale="md"] { font-size: 16px; }
+html[data-scale="lg"] { font-size: 18px; }
+
+/* Font family choices */
+html[data-font="system"] { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+html[data-font="inter"] { font-family: Inter, system-ui, -apple-system, sans-serif; }
+html[data-font="mono"] { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+html[data-font="serif"] { font-family: Georgia, Cambria, "Times New Roman", Times, serif; }
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+/* Ambient animations */
+@keyframes pulseGlow {
+  0%, 100% {
+    opacity: 0.35;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.55;
+    transform: scale(1.05);
+  }
+}
+
+.ambient-glow {
+  animation: pulseGlow 12s ease-in-out infinite;
+}
+
+@keyframes wallpaperFloat {
+  0% { transform: scale(1) translate(0, 0); }
+  50% { transform: scale(1.04) translate(-1%, 1%); }
+  100% { transform: scale(1) translate(0, 0); }
+}
+
+.animated-wallpaper {
+  animation: wallpaperFloat 20s ease-in-out infinite;
+}
+
+/* Accessibility: Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .ambient-glow, .animated-wallpaper {
+    animation: none !important;
+  }
+}

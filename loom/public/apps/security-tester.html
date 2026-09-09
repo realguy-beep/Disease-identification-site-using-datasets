@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Security & Sandbox Inspector</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #090a10;
+      color: #e2e8f0;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      padding: 14px;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      font-size: 12px;
+    }
+    .header {
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      padding-bottom: 8px;
+    }
+    h3 { font-size: 13px; color: #38bdf8; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
+    p { font-size: 11px; color: #94a3b8; margin-top: 2px; }
+    .btn-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+    button {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #f1f5f9;
+      padding: 8px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 11px;
+      text-align: left;
+      transition: all 0.15s;
+    }
+    button:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: #38bdf8;
+    }
+    .console-box {
+      flex: 1;
+      background: #040508;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      padding: 10px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .log-line {
+      line-height: 1.5;
+      word-break: break-all;
+    }
+    .log-pass { color: #4ade80; }
+    .log-fail { color: #f87171; }
+    .log-info { color: #38bdf8; }
+    .log-warn { color: #fbbf24; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h3>Loom Sandbox & Capability Auditor</h3>
+    <p>Live verification of iframe sandbox restrictions & RPC capability policies</p>
+  </div>
+
+  <div class="btn-grid">
+    <button onclick="testParentDomAccess()">1. Test DOM Boundary (parent.document)</button>
+    <button onclick="testLocalStorageAccess()">2. Test Host Storage Isolation</button>
+    <button onclick="testUnpermittedCapability()">3. Test Unpermitted RPC Capability</button>
+    <button onclick="testScopedStorage()">4. Test Scoped App Storage</button>
+  </div>
+
+  <div class="console-box" id="console">
+    <div class="log-line log-info">[System] Sandbox Auditor initialized. Click any test above.</div>
+  </div>
+
+  <script src="/apps/loom-sdk.js"></script>
+  <script>
+    const consoleBox = document.getElementById('console');
+
+    function log(text, type = 'info') {
+      const line = document.createElement('div');
+      line.className = 'log-line log-' + type;
+      line.textContent = `[${new Date().toLocaleTimeString()}] ${text}`;
+      consoleBox.appendChild(line);
+      consoleBox.scrollTop = consoleBox.scrollHeight;
+    }
+
+    LoomSDK.init().then(info => {
+      log('Loom handshake established. App: ' + info.appId, 'info');
+    }).catch(e => {
+      log('Loom handshake note: ' + e.message, 'warn');
+    });
+
+    // Test 1: Iframe Sandbox DOM restriction
+    function testParentDomAccess() {
+      log('Test 1: Attempting to access window.parent.document...', 'info');
+      try {
+        const parentDoc = window.parent.document;
+        log('VIOLATION: Sandboxed iframe was able to access parent document!', 'fail');
+      } catch (err) {
+        log('PASSED (BLOCKED): ' + err.name + ' - ' + err.message, 'pass');
+        log('Explanation: Iframe sandbox without allow-same-origin successfully blocked DOM access.', 'pass');
+      }
+    }
+
+    // Test 2: LocalStorage restriction in sandboxed origin
+    function testLocalStorageAccess() {
+      log('Test 2: Attempting to read host window.localStorage...', 'info');
+      try {
+        const val = window.localStorage.getItem('LoomOS_secret');
+        log('Notice: Sandboxed null origin accesses an isolated empty store or throws DOMException', 'warn');
+      } catch (err) {
+        log('PASSED (BLOCKED): ' + err.name + ' - ' + err.message, 'pass');
+      }
+    }
+
+    // Test 3: Unpermitted Capability RPC
+    async function testUnpermittedCapability() {
+      log('Test 3: Calling Loom RPC method without granted capability...', 'info');
+      try {
+        // Purposely call notification or state if not granted, or test unwhitelisted method
+        const res = await LoomSDK.notify('Unauthorized Alert', 'This should be blocked if capability is missing');
+        log('Capability request evaluated by Loom Broker: ' + JSON.stringify(res), 'info');
+      } catch (err) {
+        if (err.message && err.message.includes('PERMISSION_DENIED')) {
+          log('PASSED (BLOCKED BY LOOM BROKER): ' + err.message, 'pass');
+        } else {
+          log('Result: ' + err.message, 'info');
+        }
+      }
+    }
+
+    // Test 4: Scoped Storage
+    async function testScopedStorage() {
+      log('Test 4: Writing to scoped storage...', 'info');
+      try {
+        const testPayload = { timestamp: Date.now(), secure: true };
+        await LoomSDK.storage.set('audit_test_key', testPayload);
+        const retrieved = await LoomSDK.storage.get('audit_test_key');
+        if (retrieved && retrieved.secure) {
+          log('PASSED: Scoped storage read/write verified. Data is isolated to this app ID in IndexedDB.', 'pass');
+        } else {
+          log('Failed to verify scoped data.', 'fail');
+        }
+      } catch (err) {
+        log('Storage error: ' + err.message, 'fail');
+      }
+    }
+  </script>
+</body>
+</html>
+

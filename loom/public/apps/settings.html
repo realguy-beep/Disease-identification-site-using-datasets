@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>System Settings</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #0d0f18;
+      color: #e2e8f0;
+      font-family: var(--loom-font, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
+      height: 100vh;
+      display: flex;
+      overflow: hidden;
+    }
+    .sidebar {
+      width: 180px;
+      background: rgba(0, 0, 0, 0.35);
+      border-right: 1px solid rgba(255, 255, 255, 0.07);
+      padding: 14px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+    .side-title {
+      font-size: 11px;
+      text-transform: uppercase;
+      color: #64748b;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      padding: 6px 10px;
+      margin-bottom: 4px;
+    }
+    .nav-btn {
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      color: #94a3b8;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border: none;
+      background: transparent;
+      width: 100%;
+      text-align: left;
+      transition: all 0.2s;
+    }
+    .nav-btn:hover {
+      background: rgba(255, 255, 255, 0.07);
+      color: #f1f5f9;
+    }
+    .nav-btn.active {
+      background: rgba(99, 102, 241, 0.2);
+      color: #a5b4fc;
+      font-weight: 600;
+    }
+    .content {
+      flex: 1;
+      padding: 20px 24px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .section-header {
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding-bottom: 10px;
+    }
+    h2 { font-size: 16px; font-weight: 600; color: #fff; }
+    p.desc { font-size: 12px; color: #94a3b8; margin-top: 2px; }
+    
+    .card {
+      background: rgba(255, 255, 255, 0.025);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      border-radius: 12px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .card-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #f1f5f9;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 2px;
+    }
+    .row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+    .row-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .row-label { font-size: 12.5px; font-weight: 500; color: #e2e8f0; }
+    .row-sub { font-size: 11px; color: #64748b; }
+    
+    select, input[type="text"], input[type="password"], input[type="range"] {
+      background: #141624;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 6px;
+      color: #f1f5f9;
+      font-size: 12px;
+      padding: 6px 10px;
+      outline: none;
+    }
+    select:focus, input:focus { border-color: #6366f1; }
+    input[type="range"] {
+      padding: 0;
+      accent-color: #6366f1;
+      cursor: pointer;
+    }
+
+    .btn {
+      background: #6366f1;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 6px 14px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn:hover { background: #4f46e5; }
+    .btn.secondary {
+      background: rgba(255, 255, 255, 0.08);
+      color: #cbd5e1;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .btn.secondary:hover {
+      background: rgba(255, 255, 255, 0.15);
+      color: #fff;
+    }
+    .btn.danger { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+    .btn.danger:hover { background: #dc2626; color: #fff; }
+
+    /* Gallery Grid for Wallpapers */
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+      gap: 10px;
+      margin-top: 4px;
+    }
+    .wallpaper-item {
+      height: 64px;
+      border-radius: 8px;
+      border: 2px solid rgba(255, 255, 255, 0.1);
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.2s;
+      background-size: cover;
+      background-position: center;
+    }
+    .wallpaper-item:hover {
+      transform: scale(1.04);
+      border-color: rgba(255, 255, 255, 0.4);
+    }
+    .wallpaper-item.active {
+      border-color: #6366f1;
+      box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.4);
+    }
+    .wallpaper-label {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(0, 0, 0, 0.7);
+      font-size: 9.5px;
+      padding: 2px 4px;
+      text-align: center;
+      color: #cbd5e1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .color-swatches {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .color-swatch {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: transform 0.15s;
+    }
+    .color-swatch:hover { transform: scale(1.18); }
+    .color-swatch.active { border-color: #fff; transform: scale(1.12); box-shadow: 0 0 6px rgba(255, 255, 255, 0.5); }
+
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 38px;
+      height: 22px;
+    }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      inset: 0;
+      background-color: rgba(255, 255, 255, 0.15);
+      transition: .2s;
+      border-radius: 20px;
+    }
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 16px;
+      width: 16px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .2s;
+      border-radius: 50%;
+    }
+    input:checked + .slider { background-color: #6366f1; }
+    input:checked + .slider:before { transform: translateX(16px); }
+
+    .theme-pack-card {
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(255, 255, 255, 0.02);
+    }
+    .theme-pack-card:hover {
+      background: rgba(255, 255, 255, 0.06);
+    }
+    .theme-pack-card.active {
+      border-color: #6366f1;
+      background: rgba(99, 102, 241, 0.15);
+    }
+  </style>
+</head>
+<body>
+  <div class="sidebar">
+    <div class="side-title">Loom Settings</div>
+    <button class="nav-btn active" onclick="switchTab('personalization')">🎨 Personalization</button>
+    <button class="nav-btn" onclick="switchTab('appearance')">✨ Window Styling</button>
+    <button class="nav-btn" onclick="switchTab('dock')">📌 Dock & Taskbar</button>
+    <button class="nav-btn" onclick="switchTab('apps')">🛡️ App Permissions</button>
+    <button class="nav-btn" onclick="switchTab('storage')">💾 Storage & DB</button>
+    <button class="nav-btn" onclick="switchTab('account')">👤 Account & Lock</button>
+  </div>
+
+  <div class="content" id="content">
+    <!-- Rendered dynamically -->
+  </div>
+
+  <script src="/apps/loom-sdk.js"></script>
+  <script>
+    let currentTab = 'personalization';
+    let settings = {
+      themeMode: 'dark',
+      themePack: 'custom',
+      wallpaperType: 'animated',
+      wallpaper: 'radial-gradient(ellipse at 50% 20%, rgba(99, 102, 241, 0.15) 0%, rgba(14, 165, 233, 0.05) 50%, transparent 80%)',
+      wallpaperFit: 'fill',
+      accentColor: '#6366f1',
+      windowCornerRadius: 16,
+      windowBlur: 16,
+      windowOpacity: 0.94,
+      animSpeed: 200,
+      dockPosition: 'bottom',
+      dockSize: 'md',
+      dockAutoHide: false,
+      fontFamily: 'system',
+      fontSize: 'md',
+      iconPack: 'colorful',
+      reducedMotion: false,
+      dnd: false
+    };
+
+    // Preset Wallpaper Bundles
+    const WALLPAPER_PRESETS = [
+      {
+        id: 'animated-1',
+        type: 'animated',
+        name: 'Live Aurora',
+        val: 'radial-gradient(ellipse at 40% 40%, rgba(99, 102, 241, 0.3) 0%, transparent 60%), radial-gradient(ellipse at 80% 80%, rgba(14, 165, 233, 0.25) 0%, transparent 50%)',
+        preview: 'linear-gradient(135deg, #4f46e5, #0ea5e9)'
+      },
+      {
+        id: 'grad-cosmic',
+        type: 'gradient',
+        name: 'Cosmic Indigo',
+        val: 'radial-gradient(ellipse at 50% 20%, rgba(99, 102, 241, 0.25) 0%, #090a0f 75%)',
+        preview: 'radial-gradient(ellipse at 50% 20%, #6366f1 0%, #090a0f 80%)'
+      },
+      {
+        id: 'grad-aurora',
+        type: 'gradient',
+        name: 'Aurora Teal',
+        val: 'linear-gradient(135deg, #05221c 0%, #0c3830 40%, #060b17 100%)',
+        preview: 'linear-gradient(135deg, #0d9488 0%, #0f172a 100%)'
+      },
+      {
+        id: 'grad-sunset',
+        type: 'gradient',
+        name: 'Sunset Ray',
+        val: 'linear-gradient(135deg, #2b1126 0%, #441731 40%, #0e0717 100%)',
+        preview: 'linear-gradient(135deg, #ec4899 0%, #3b0764 100%)'
+      },
+      {
+        id: 'solid-space',
+        type: 'solid',
+        name: 'Deep Space',
+        val: '#090a0f',
+        preview: '#090a0f'
+      },
+      {
+        id: 'solid-slate',
+        type: 'solid',
+        name: 'Slate Navy',
+        val: '#0f172a',
+        preview: '#0f172a'
+      },
+      {
+        id: 'solid-emerald',
+        type: 'solid',
+        name: 'Emerald Void',
+        val: '#061a14',
+        preview: '#061a14'
+      },
+      {
+        id: 'solid-amber',
+        type: 'solid',
+        name: 'Warm Obsidian',
+        val: '#1a110a',
+        preview: '#1a110a'
+      },
+      {
+        id: 'bundled-mountains',
+        type: 'bundled',
+        name: 'Vector Peaks',
+        val: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080"><rect width="100%" height="100%" fill="%230b0d17"/><polygon points="0,1080 350,650 700,1080" fill="%23131726"/><polygon points="400,1080 850,520 1300,1080" fill="%231a2035"/><polygon points="1000,1080 1450,600 1920,1080" fill="%23121524"/><circle cx="960" cy="380" r="180" fill="%236366f1" opacity="0.15"/></svg>',
+        preview: 'linear-gradient(180deg, #131726 0%, #0b0d17 100%)'
+      },
+      {
+        id: 'bundled-grid',
+        type: 'bundled',
+        name: 'Synth Horizon',
+        val: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080"><rect width="100%" height="100%" fill="%23060810"/><defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="%23ec4899" stop-opacity="0.3"/><stop offset="100%" stop-color="%23060810"/></linearGradient></defs><rect width="100%" height="60%" fill="url(%23g)"/><circle cx="960" cy="550" r="220" fill="%23f43f5e" opacity="0.25"/></svg>',
+        preview: 'linear-gradient(180deg, #831843 0%, #060810 100%)'
+      }
+    ];
+
+    const THEME_PACK_CONFIGS = [
+      { id: 'custom', name: 'Custom User Theme', accent: '#6366f1', desc: 'Custom user defined colors' },
+      { id: 'midnight', name: 'Midnight Obsidian', accent: '#38bdf8', desc: 'OLED black with cyan ice accent' },
+      { id: 'solarized', name: 'Solarized Dark', accent: '#268bd2', desc: 'Classic developer deep cyan palette' },
+      { id: 'high-contrast', name: 'High Contrast', accent: '#ffff00', desc: 'Maximum accessibility pure black & yellow' },
+      { id: 'emerald-calm', name: 'Emerald Calm', accent: '#10b981', desc: 'Restful botanical deep green theme' },
+      { id: 'rose-quartz', name: 'Rose Quartz', accent: '#f43f5e', desc: 'Vibrant modern rose and plum tone' }
+    ];
+
+    // Listen for current settings from host
+    window.addEventListener('message', (e) => {
+      const data = e.data;
+      if (data && data.type === 'LOOM_SETTINGS_CURRENT' && data.settings) {
+        settings = { ...settings, ...data.settings };
+        renderCurrentTab();
+      }
+    });
+
+    // Request settings on boot
+    window.parent.postMessage({ type: 'LOOM_GET_SETTINGS' }, '*');
+    renderCurrentTab();
+
+    function switchTab(tab) {
+      currentTab = tab;
+      document.querySelectorAll('.nav-btn').forEach((b, idx) => {
+        const tabs = ['personalization', 'appearance', 'dock', 'apps', 'storage', 'account'];
+        b.className = 'nav-btn' + (tabs[idx] === tab ? ' active' : '');
+      });
+      renderCurrentTab();
+    }
+
+    function renderCurrentTab() {
+      if (currentTab === 'personalization') renderPersonalization();
+      else if (currentTab === 'appearance') renderWindowStyling();
+      else if (currentTab === 'dock') renderDockSettings();
+      else if (currentTab === 'apps') renderApps();
+      else if (currentTab === 'storage') renderStorage();
+      else if (currentTab === 'account') renderAccount();
+    }
+
+    function renderPersonalization() {
+      const container = document.getElementById('content');
+      container.innerHTML = `
+        <div class="section-header">
+          <h2>Personalization & Theme</h2>
+          <p class="desc">Customize wallpaper, accent colors, theme packs, and typography</p>
+        </div>
+
+        <!-- Wallpaper Picker -->
+        <div class="card">
+          <div class="card-title">🖼️ Desktop Wallpaper</div>
+          <p class="desc">Select a built-in background, live ambient shift, or upload your own image</p>
+          
+          <div class="gallery-grid">
+            ${WALLPAPER_PRESETS.map(p => `
+              <div 
+                class="wallpaper-item ${settings.wallpaper === p.val ? 'active' : ''}" 
+                style="background:${p.preview};" 
+                onclick="setWallpaper('${p.type}', '${encodeURIComponent(p.val)}')"
+                title="${p.name}"
+              >
+                <div class="wallpaper-label">${p.name}</div>
+              </div>
+            `).join('')}
+          </div>
+
+          <div class="row" style="margin-top: 8px;">
+            <div class="row-info">
+              <span class="row-label">Custom Image Upload</span>
+              <span class="row-sub">Stored strictly offline in IndexedDB (zero external upload)</span>
+            </div>
+            <label class="btn secondary" style="cursor: pointer;">
+              📁 Upload Image
+              <input type="file" accept="image/*" style="display:none;" onchange="handleImageUpload(event)">
+            </label>
+          </div>
+
+          <div class="row">
+            <div class="row-info">
+              <span class="row-label">Wallpaper Fit Mode</span>
+              <span class="row-sub">How images adapt to screen dimensions</span>
+            </div>
+            <select id="fitMode" onchange="setFitMode(this.value)">
+              <option value="fill" ${settings.wallpaperFit === 'fill' ? 'selected' : ''}>Fill (Cover)</option>
+              <option value="fit" ${settings.wallpaperFit === 'fit' ? 'selected' : ''}>Fit (Contain)</option>
+              <option value="stretch" ${settings.wallpaperFit === 'stretch' ? 'selected' : ''}>Stretch</option>
+              <option value="tile" ${settings.wallpaperFit === 'tile' ? 'selected' : ''}>Tile</option>
+              <option value="center" ${settings.wallpaperFit === 'center' ? 'selected' : ''}>Center</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Accent Color -->
+        <div class="card">
+          <div class="card-title">🎨 Accent Color</div>
+          <div class="row">
+            <div class="row-info">
+              <span class="row-label">System Highlight Tone</span>
+              <span class="row-sub">Recolors active borders, focus rings, buttons and dock highlights</span>
+            </div>
+            <div class="color-swatches">
+              ${['#6366f1', '#0ea5e9', '#10b981', '#f59e0b', '#f43f5e', '#8b5cf6', '#06b6d4', '#eab308'].map(c => `
+                <div 
+                  class="color-swatch ${settings.accentColor === c ? 'active' : ''}" 
+                  style="background:${c};" 
+                  onclick="setAccent('${c}')"
+                ></div>
+              `).join('')}
+              <input type="color" value="${settings.accentColor || '#6366f1'}" onchange="setAccent(this.value)" style="width:28px; height:28px; border:none; background:transparent; cursor:pointer;" title="Custom Color">
+            </div>
+          </div>
+        </div>
+
+        <!-- Theme Packs -->
+        <div class="card">
+          <div class="card-title">📦 Theme Packs</div>
+          <p class="desc">Preset style combinations bundling accent, surfaces and contrast</p>
+          <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px;">
+            ${THEME_PACK_CONFIGS.map(pack => `
+              <div 
+                class="theme-pack-card ${settings.themePack === pack.id ? 'active' : ''}" 
+                onclick="setThemePack('${pack.id}', '${pack.accent}')"
+              >
+                <div>
+                  <div style="font-size: 12px; font-weight: 600; color: #f1f5f9;">${pack.name}</div>
+                  <div style="font-size: 10px; color: #64748b;">${pack.desc}</div>
+                </div>
+                <div style="width: 14px; height: 14px; border-radius: 50%; background: ${pack.accent};"></div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+
+        <!-- Typography & Icons -->
+        <div class="card">
+          <div class="card-title">🔤 Typography & Icons</div>
+          <div class="row">
+            <div class="row-info">
+              <span class="row-label">Font Family</span>
+              <span class="row-sub">Interface typography typeface</span>
+            </div>
+            <select id="fontFamily" onchange="setFontFamily(this.value)">
+              <option value="system" ${settings.fontFamily === 'system' ? 'selected' : ''}>System Default</option>
+              <option value="inter" ${settings.fontFamily === 'inter' ? 'selected' : ''}>Inter (Clean Sans)</option>
+              <option value="mono" ${settings.fontFamily === 'mono' ? 'selected' : ''}>JetBrains Mono (Code)</option>
+              <option value="serif" ${settings.fontFamily === 'serif' ? 'selected' : ''}>Editorial Serif</option>
+            </select>
+          </div>
+
+          <div class="row">
+            <div class="row-info">
+              <span class="row-label">Font Scaling</span>
+              <span class="row-sub">Scale UI text dimensions</span>
+            </div>
+            <select id="fontSize" onchange="setFontSize(this.value)">
+              <option value="sm" ${settings.fontSize === 'sm' ? 'selected' : ''}>Compact (Small)</option>
+              <option value="md" ${settings.fontSize === 'md' ? 'selected' : ''}>Standard (Medium)</option>
+              <option value="lg" ${settings.fontSize === 'lg' ? 'selected' : ''}>Spacious (Large)</option>
+            </select>
+          </div>
+
+          <div class="row">
+            <div class="row-info">
+              <span class="row-label">Icon Style</span>
+              <span class="row-sub">Dock and titlebar icon aesthetic</span>
+            </div>
+            <select id="iconPack" onchange="setIconPack(this.value)">
+              <option value="colorful" ${settings.iconPack === 'colorful' ? 'selected' : ''}>Vibrant Colorful</option>
+              <option value="outline" ${settings.iconPack === 'outline' ? 'selected' : ''}>Minimal Outline</option>
+              <option value="filled" ${settings.iconPack === 'filled' ? 'selected' : ''}>Solid Accent</option>
+            </select>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderWindowStyling() {
+      const container = document.getElementById('content');
+      container.innerHTML = `
+        <div class="section-header">
+          <h2>Window & Card Styling</h2>
+          <p class="desc">Fine-tune card corner roundness, glassmorphism blur, opacity and motion</p>
+        </div>
+
+        <div class="card">
+          <div class="row">
+            <div class="row-info">
+              <span class="row-label">Corner Roundness</span>
+              <span class="row-sub">Radius of card borders (<span id="valRadius">${settings.windowCornerRadius || 16}px</span>)</span>
+            </div>
+            <input 
+              type="range" 
+              min="4" 
+              max="28" 
+              value="${settings.windowCornerRadius || 16}" 
+              oninput="document.getElementById('valRadius').innerText = this.value + 'px'; setWindowRadius(this.value)"
+              style="width: 140px;"
+            >
+          </div>
+
+          <div class="row">
+            <div class="row-info">
+              <span class="row-label">Transparency & Blur</span>
+              <span class="row-sub">Backdrop glass intensity (<span id="valBlur">${settings.windowBlur || 16}px</span>)</span>
+            </div>
+            <input 
+              type="range" 
+              min="0" 
+              max="30" 
+              value="${settings.windowBlur || 16}" 
+              oninput="document.getElementById('valBlur').innerText = this.value + 'px'; setWindowBlur(this.value)"
+              style="width: 140px;"
+            >
+          </div>
+
+          <div class="row">
+            <div class="row-info">
+              <span class="row-label">Surface Opacity</span>
+              <span class="row-sub">Card background fill (<span id="valOpacity">${Math.round((settings.windowOpacity || 0.94) * 100)}%</span>)</span>
+            </div>
+            <input 
+              type="range" 
+              min="50" 
+              max="100" 
+              value="${Math.round((settings.windowOpacity || 0.94) * 100)}" 
+              oninput="document.getElementById('valOpacity').innerText = this.value + '%'; setWindowOpacity(this.value / 100)"
+              style="width: 140px;"
+            >
+          </div>
+
+          <div class="row">
+            <div class="row-info">
+              <span class="row-label">Animation Speed</span>
+              <span class="row-sub">Window snap & resize transitions (<span id="valSpeed">${settings.animSpeed || 200}ms</span>)</span>
+            </div>
+            <input 
+              type="range" 
+              min="80" 
+              max="450" 
+              value="${settings.animSpeed || 200}" 
+              oninput="document.getElementById('valSpeed').innerText = this.value + 'ms'; setAnimSpeed(this.value)"
+              style="width: 140px;"
+            >
+          </div>
+
+          <div class="row">
+            <div class="row-info">
+              <span class="row-label">Reduced Motion</span>
+              <span class="row-sub">Disable animated gradients and live background pulses</span>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="motionToggle" ${settings.reducedMotion ? 'checked' : ''} onchange="toggleMotion(this.checked)">
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderDockSettings() {
+      const container = document.getElementById('content');
+      container.innerHTML = `
+        <div class="section-header">
+          <h2>Dock & Taskbar Settings</h2>
+          <p class="desc">Configure screen placement, size scale and auto-hide behavior</p>
+        </div>
+
+        <div class="card">
+          <div class="row">
+            <div class="row-info">
+              <span class="row-label">Dock Screen Position</span>
+              <span class="row-sub">Where the app dock anchors on screen</span>
+            </div>
+            <select id="dockPos" onchange="setDockPosition(this.value)">
+              <option value="bottom" ${settings.dockPosition === 'bottom' ? 'selected' : ''}>Bottom (Standard)</option>
+              <option value="top" ${settings.dockPosition === 'top' ? 'selected' : ''}>Top Edge</option>
+              <option value="left" ${settings.dockPosition === 'left' ? 'selected' : ''}>Left Vertical</option>
+              <option value="right" ${settings.dockPosition === 'right' ? 'selected' : ''}>Right Vertical</option>
+            </select>
+          </div>
+
+          <div class="row">
+            <div class="row-info">
+              <span class="row-label">Dock Icon Size</span>
+              <span class="row-sub">Scale of dock buttons and icons</span>
+            </div>
+            <select id="dockSize" onchange="setDockSize(this.value)">
+              <option value="sm" ${settings.dockSize === 'sm' ? 'selected' : ''}>Small (Compact 32px)</option>
+              <option value="md" ${settings.dockSize === 'md' ? 'selected' : ''}>Medium (Standard 44px)</option>
+              <option value="lg" ${settings.dockSize === 'lg' ? 'selected' : ''}>Large (Spacious 56px)</option>
+            </select>
+          </div>
+
+          <div class="row">
+            <div class="row-info">
+              <span class="row-label">Auto-hide Dock</span>
+              <span class="row-sub">Slide dock off-screen until edge is hovered</span>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="dockHide" ${settings.dockAutoHide ? 'checked' : ''} onchange="setDockAutoHide(this.checked)">
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderApps() {
+      const container = document.getElementById('content');
+      container.innerHTML = `
+        <div class="section-header">
+          <h2>App Capabilities & Permissions</h2>
+          <p class="desc">Review and audit capability grants per sandboxed application</p>
+        </div>
+
+        <div class="card">
+          <div style="font-size:12.5px; color:#cbd5e1; line-height: 1.6;">
+            All built-in and third-party apps run within isolated HTML5 sandboxed iframes (<code style="background:rgba(255,255,255,0.08); padding:2px 4px; border-radius:4px;">sandbox="allow-scripts allow-forms"</code>).
+            Capabilities (VFS, State, Notifications, Clipboard) are strictly verified via JSON-RPC 2.0 broker tokens per session.
+          </div>
+        </div>
+      `;
+    }
+
+    function renderStorage() {
+      const container = document.getElementById('content');
+      container.innerHTML = `
+        <div class="section-header">
+          <h2>Storage & Database</h2>
+          <p class="desc">Manage local IndexedDB footprint and scoped app partitions</p>
+        </div>
+
+        <div class="card">
+          <div class="row">
+            <div class="row-info">
+              <span class="row-label">Virtual File System & State</span>
+              <span class="row-sub">IndexedDB Local Database</span>
+            </div>
+            <span style="font-size:12px; color:#10b981; font-family:monospace; font-weight:600;">✓ Healthy</span>
+          </div>
+
+          <div class="row">
+            <div class="row-info">
+              <span class="row-label">Reset Loom OS to Defaults</span>
+              <span class="row-sub" style="color:#f87171;">Deletes IndexedDB and resets system state</span>
+            </div>
+            <button class="btn danger" onclick="confirmReset()">Factory Reset</button>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderAccount() {
+      const container = document.getElementById('content');
+      container.innerHTML = `
+        <div class="section-header">
+          <h2>Account & Lock Screen</h2>
+          <p class="desc">Manage local profile and passphrase protection</p>
+        </div>
+
+        <div class="card">
+          <div class="row">
+            <div class="row-info">
+              <span class="row-label">Lock Screen Passphrase</span>
+              <span class="row-sub">Enter a password to require on startup or lock</span>
+            </div>
+            <div style="display:flex; gap:6px;">
+              <input type="password" placeholder="New Passphrase" id="newPass" style="width:140px;">
+              <button class="btn" onclick="savePassphrase()">Set Password</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // Setting update handlers
+    function setWallpaper(type, encodedVal) {
+      settings.wallpaperType = type;
+      settings.wallpaper = decodeURIComponent(encodedVal);
+      saveSettingsToHost();
+      renderPersonalization();
+    }
+
+    function setFitMode(fit) {
+      settings.wallpaperFit = fit;
+      saveSettingsToHost();
+    }
+
+    function handleImageUpload(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (uploadEvent) => {
+        settings.wallpaperType = 'custom';
+        settings.wallpaper = uploadEvent.target.result;
+        saveSettingsToHost();
+        renderPersonalization();
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function setAccent(color) {
+      settings.accentColor = color;
+      saveSettingsToHost();
+      renderPersonalization();
+    }
+
+    function setThemePack(packId, accent) {
+      settings.themePack = packId;
+      settings.accentColor = accent;
+      saveSettingsToHost();
+      renderPersonalization();
+    }
+
+    function setFontFamily(font) {
+      settings.fontFamily = font;
+      saveSettingsToHost();
+    }
+
+    function setFontSize(size) {
+      settings.fontSize = size;
+      saveSettingsToHost();
+    }
+
+    function setIconPack(pack) {
+      settings.iconPack = pack;
+      saveSettingsToHost();
+    }
+
+    function setWindowRadius(val) {
+      settings.windowCornerRadius = parseInt(val, 10);
+      saveSettingsToHost();
+    }
+
+    function setWindowBlur(val) {
+      settings.windowBlur = parseInt(val, 10);
+      saveSettingsToHost();
+    }
+
+    function setWindowOpacity(val) {
+      settings.windowOpacity = parseFloat(val);
+      saveSettingsToHost();
+    }
+
+    function setAnimSpeed(val) {
+      settings.animSpeed = parseInt(val, 10);
+      saveSettingsToHost();
+    }
+
+    function toggleMotion(reduced) {
+      settings.reducedMotion = reduced;
+      if (reduced && settings.wallpaperType === 'animated') {
+        settings.wallpaperType = 'solid';
+      }
+      saveSettingsToHost();
+    }
+
+    function setDockPosition(pos) {
+      settings.dockPosition = pos;
+      saveSettingsToHost();
+    }
+
+    function setDockSize(size) {
+      settings.dockSize = size;
+      saveSettingsToHost();
+    }
+
+    function setDockAutoHide(hide) {
+      settings.dockAutoHide = hide;
+      saveSettingsToHost();
+    }
+
+    function saveSettingsToHost() {
+      window.parent.postMessage({
+        type: 'LOOM_SETTINGS_UPDATE',
+        settings
+      }, '*');
+    }
+
+    function confirmReset() {
+      if (confirm('Are you sure you want to reset Loom OS? All custom notes, files, and settings will be restored to defaults.')) {
+        indexedDB.deleteDatabase('LoomOS_Database');
+        window.parent.location.reload();
+      }
+    }
+
+    function savePassphrase() {
+      const p = document.getElementById('newPass').value;
+      if (!p) return alert('Please enter a passphrase');
+      window.parent.postMessage({
+        type: 'LOOM_SET_PASSPHRASE',
+        passphrase: p
+      }, '*');
+      alert('Passphrase updated! Loom will ask for this upon Lock Screen.');
+    }
+  </script>
+</body>
+</html>

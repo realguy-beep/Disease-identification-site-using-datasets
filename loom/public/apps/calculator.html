@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Loom Calculator</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #0d0f18;
+      color: #f1f5f9;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      user-select: none;
+    }
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 14px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(0, 0, 0, 0.2);
+    }
+    .mode-toggle {
+      display: flex;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 6px;
+      padding: 2px;
+    }
+    .mode-btn {
+      border: none;
+      background: transparent;
+      color: #94a3b8;
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+    .mode-btn.active {
+      background: #6366f1;
+      color: #fff;
+    }
+    .history-toggle-btn {
+      border: none;
+      background: transparent;
+      color: #94a3b8;
+      cursor: pointer;
+      font-size: 11px;
+      padding: 4px 8px;
+      border-radius: 4px;
+      transition: all 0.2s;
+    }
+    .history-toggle-btn:hover {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.08);
+    }
+    .main-body {
+      flex: 1;
+      display: flex;
+      position: relative;
+      overflow: hidden;
+    }
+    .calc-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 12px;
+      gap: 10px;
+    }
+    .display {
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 10px;
+      padding: 12px 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      justify-content: center;
+      min-height: 80px;
+    }
+    .display-history {
+      font-size: 12px;
+      color: #94a3b8;
+      min-height: 16px;
+      font-family: monospace;
+      word-break: break-all;
+    }
+    .display-value {
+      font-size: 28px;
+      font-weight: 600;
+      font-family: monospace;
+      letter-spacing: -0.5px;
+      color: #fff;
+      overflow-x: auto;
+      max-width: 100%;
+      white-space: nowrap;
+    }
+    .keypad {
+      flex: 1;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+    }
+    .keypad.scientific {
+      grid-template-columns: repeat(5, 1fr);
+    }
+    .key {
+      border: none;
+      background: rgba(255, 255, 255, 0.06);
+      color: #e2e8f0;
+      font-size: 15px;
+      font-weight: 500;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.1s ease-in-out;
+      border: 1px solid rgba(255, 255, 255, 0.04);
+    }
+    .key:hover {
+      background: rgba(255, 255, 255, 0.12);
+    }
+    .key:active {
+      transform: scale(0.96);
+      background: rgba(255, 255, 255, 0.18);
+    }
+    .key.op {
+      background: rgba(99, 102, 241, 0.2);
+      color: #a5b4fc;
+      font-weight: 600;
+    }
+    .key.op:hover {
+      background: rgba(99, 102, 241, 0.35);
+    }
+    .key.fn {
+      background: rgba(255, 255, 255, 0.03);
+      color: #cbd5e1;
+      font-size: 13px;
+    }
+    .key.equals {
+      background: #6366f1;
+      color: #fff;
+      font-weight: 700;
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+    }
+    .key.equals:hover {
+      background: #4f46e5;
+    }
+    .key.clear {
+      color: #f87171;
+    }
+    .history-drawer {
+      width: 190px;
+      border-left: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(0, 0, 0, 0.3);
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      overflow-y: auto;
+    }
+    .history-title {
+      font-size: 11px;
+      text-transform: uppercase;
+      font-weight: 700;
+      color: #64748b;
+      letter-spacing: 0.05em;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .history-clear-btn {
+      font-size: 10px;
+      color: #ef4444;
+      background: none;
+      border: none;
+      cursor: pointer;
+    }
+    .history-item {
+      padding: 6px 8px;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.03);
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      transition: background 0.15s;
+    }
+    .history-item:hover {
+      background: rgba(255, 255, 255, 0.08);
+    }
+    .history-expr {
+      font-size: 11px;
+      color: #94a3b8;
+      font-family: monospace;
+    }
+    .history-res {
+      font-size: 13px;
+      font-weight: 600;
+      color: #a5b4fc;
+      font-family: monospace;
+      text-align: right;
+    }
+  </style>
+</head>
+<body>
+  <div class="top-bar">
+    <div class="mode-toggle">
+      <button class="mode-btn active" id="btnStd" onclick="setMode('standard')">Standard</button>
+      <button class="mode-btn" id="btnSci" onclick="setMode('scientific')">Scientific</button>
+    </div>
+    <button class="history-toggle-btn" onclick="toggleHistory()">📜 History Tape</button>
+  </div>
+
+  <div class="main-body">
+    <div class="calc-container">
+      <div class="display">
+        <div class="display-history" id="displayHistory"></div>
+        <div class="display-value" id="displayValue">0</div>
+      </div>
+
+      <div class="keypad" id="keypad">
+        <!-- Injected by script based on mode -->
+      </div>
+    </div>
+
+    <div class="history-drawer" id="historyDrawer">
+      <div class="history-title">
+        <span>History Tape</span>
+        <button class="history-clear-btn" onclick="clearHistory()">Clear</button>
+      </div>
+      <div id="historyList" style="display: flex; flex-direction: column; gap: 6px;"></div>
+    </div>
+  </div>
+
+  <script>
+    let mode = 'standard';
+    let currentInput = '0';
+    let previousExpression = '';
+    let isNewInput = true;
+    let history = [];
+    let showHistory = true;
+
+    function setMode(m) {
+      mode = m;
+      document.getElementById('btnStd').className = 'mode-btn' + (m === 'standard' ? ' active' : '');
+      document.getElementById('btnSci').className = 'mode-btn' + (m === 'scientific' ? ' active' : '');
+      renderKeypad();
+    }
+
+    function toggleHistory() {
+      showHistory = !showHistory;
+      document.getElementById('historyDrawer').style.display = showHistory ? 'flex' : 'none';
+    }
+
+    function updateDisplay() {
+      document.getElementById('displayValue').innerText = currentInput;
+      document.getElementById('displayHistory').innerText = previousExpression;
+    }
+
+    function appendChar(c) {
+      if (isNewInput) {
+        if (c === '.') {
+          currentInput = '0.';
+        } else {
+          currentInput = c;
+        }
+        isNewInput = false;
+      } else {
+        if (c === '.' && currentInput.includes('.')) return;
+        currentInput += c;
+      }
+      updateDisplay();
+    }
+
+    function appendOp(op) {
+      if (!isNewInput) {
+        previousExpression += (previousExpression ? ' ' : '') + currentInput + ' ' + op;
+      } else if (previousExpression) {
+        previousExpression = previousExpression.slice(0, -1) + op;
+      }
+      isNewInput = true;
+      updateDisplay();
+    }
+
+    function clearAll() {
+      currentInput = '0';
+      previousExpression = '';
+      isNewInput = true;
+      updateDisplay();
+    }
+
+    function backspace() {
+      if (isNewInput) return;
+      currentInput = currentInput.slice(0, -1);
+      if (currentInput === '' || currentInput === '-') {
+        currentInput = '0';
+        isNewInput = true;
+      }
+      updateDisplay();
+    }
+
+    function negate() {
+      if (currentInput === '0') return;
+      if (currentInput.startsWith('-')) {
+        currentInput = currentInput.slice(1);
+      } else {
+        currentInput = '-' + currentInput;
+      }
+      updateDisplay();
+    }
+
+    function factorial(n) {
+      if (n < 0 || n > 170) return NaN;
+      if (n === 0 || n === 1) return 1;
+      let res = 1;
+      for (let i = 2; i <= n; i++) res *= i;
+      return res;
+    }
+
+    function evalFunction(fnName) {
+      const val = parseFloat(currentInput);
+      let res = 0;
+      switch (fnName) {
+        case 'sin': res = Math.sin(val); break;
+        case 'cos': res = Math.cos(val); break;
+        case 'tan': res = Math.tan(val); break;
+        case 'sqrt': res = Math.sqrt(val); break;
+        case 'sqr': res = val * val; break;
+        case 'log': res = Math.log10(val); break;
+        case 'ln': res = Math.log(val); break;
+        case 'fact': res = factorial(Math.floor(val)); break;
+        case 'inv': res = val !== 0 ? 1 / val : 'Error'; break;
+        case 'pi': res = Math.PI; break;
+        case 'e': res = Math.E; break;
+      }
+      previousExpression = `${fnName}(${val})`;
+      currentInput = Number(res.toFixed(8)).toString();
+      isNewInput = true;
+      addHistory(previousExpression, currentInput);
+      updateDisplay();
+    }
+
+    function calculate() {
+      if (!previousExpression && isNewInput) return;
+      const fullExpr = previousExpression + ' ' + currentInput;
+      try {
+        // Safe evaluation of standard arithmetic tokens
+        const sanitized = fullExpr
+          .replace(/×/g, '*')
+          .replace(/÷/g, '/')
+          .replace(/\^/g, '**');
+
+        // Verify only math tokens
+        if (!/^[0-9+\-*/(). %*]+$/.test(sanitized)) {
+          currentInput = 'Error';
+        } else {
+          const result = Function('"use strict"; return (' + sanitized + ')')();
+          const cleanRes = Number(Number(result).toFixed(10)).toString();
+          addHistory(fullExpr, cleanRes);
+          previousExpression = fullExpr + ' =';
+          currentInput = cleanRes;
+        }
+      } catch (err) {
+        currentInput = 'Error';
+      }
+      isNewInput = true;
+      updateDisplay();
+    }
+
+    function addHistory(expr, res) {
+      history.unshift({ expr, res });
+      if (history.length > 20) history.pop();
+      renderHistory();
+    }
+
+    function renderHistory() {
+      const list = document.getElementById('historyList');
+      if (history.length === 0) {
+        list.innerHTML = '<div style="font-size:11px; color:#475569; text-align:center; padding:12px;">No calculations yet</div>';
+        return;
+      }
+      list.innerHTML = history.map((item, idx) => `
+        <div class="history-item" onclick="reuseHistory('${item.res}')">
+          <div class="history-expr">${item.expr}</div>
+          <div class="history-res">= ${item.res}</div>
+        </div>
+      `).join('');
+    }
+
+    function reuseHistory(res) {
+      currentInput = res;
+      isNewInput = true;
+      updateDisplay();
+    }
+
+    function clearHistory() {
+      history = [];
+      renderHistory();
+    }
+
+    function renderKeypad() {
+      const pad = document.getElementById('keypad');
+      if (mode === 'standard') {
+        pad.className = 'keypad';
+        pad.innerHTML = `
+          <button class="key clear" onclick="clearAll()">AC</button>
+          <button class="key fn" onclick="backspace()">⌫</button>
+          <button class="key fn" onclick="appendOp('%')">%</button>
+          <button class="key op" onclick="appendOp('÷')">÷</button>
+
+          <button class="key" onclick="appendChar('7')">7</button>
+          <button class="key" onclick="appendChar('8')">8</button>
+          <button class="key" onclick="appendChar('9')">9</button>
+          <button class="key op" onclick="appendOp('×')">×</button>
+
+          <button class="key" onclick="appendChar('4')">4</button>
+          <button class="key" onclick="appendChar('5')">5</button>
+          <button class="key" onclick="appendChar('6')">6</button>
+          <button class="key op" onclick="appendOp('-')">-</button>
+
+          <button class="key" onclick="appendChar('1')">1</button>
+          <button class="key" onclick="appendChar('2')">2</button>
+          <button class="key" onclick="appendChar('3')">3</button>
+          <button class="key op" onclick="appendOp('+')">+</button>
+
+          <button class="key fn" onclick="negate()">±</button>
+          <button class="key" onclick="appendChar('0')">0</button>
+          <button class="key" onclick="appendChar('.')">.</button>
+          <button class="key equals" onclick="calculate()">=</button>
+        `;
+      } else {
+        pad.className = 'keypad scientific';
+        pad.innerHTML = `
+          <button class="key fn" onclick="evalFunction('sin')">sin</button>
+          <button class="key fn" onclick="evalFunction('cos')">cos</button>
+          <button class="key fn" onclick="evalFunction('tan')">tan</button>
+          <button class="key clear" onclick="clearAll()">AC</button>
+          <button class="key fn" onclick="backspace()">⌫</button>
+
+          <button class="key fn" onclick="evalFunction('ln')">ln</button>
+          <button class="key fn" onclick="evalFunction('log')">log</button>
+          <button class="key fn" onclick="evalFunction('sqrt')">√</button>
+          <button class="key fn" onclick="appendOp('^')">xʸ</button>
+          <button class="key op" onclick="appendOp('÷')">÷</button>
+
+          <button class="key fn" onclick="evalFunction('pi')">π</button>
+          <button class="key" onclick="appendChar('7')">7</button>
+          <button class="key" onclick="appendChar('8')">8</button>
+          <button class="key" onclick="appendChar('9')">9</button>
+          <button class="key op" onclick="appendOp('×')">×</button>
+
+          <button class="key fn" onclick="evalFunction('e')">e</button>
+          <button class="key" onclick="appendChar('4')">4</button>
+          <button class="key" onclick="appendChar('5')">5</button>
+          <button class="key" onclick="appendChar('6')">6</button>
+          <button class="key op" onclick="appendOp('-')">-</button>
+
+          <button class="key fn" onclick="evalFunction('fact')">n!</button>
+          <button class="key" onclick="appendChar('1')">1</button>
+          <button class="key" onclick="appendChar('2')">2</button>
+          <button class="key" onclick="appendChar('3')">3</button>
+          <button class="key op" onclick="appendOp('+')">+</button>
+
+          <button class="key fn" onclick="appendChar('(')">(</button>
+          <button class="key fn" onclick="appendChar(')')">)</button>
+          <button class="key" onclick="appendChar('0')">0</button>
+          <button class="key" onclick="appendChar('.')">.</button>
+          <button class="key equals" onclick="calculate()">=</button>
+        `;
+      }
+    }
+
+    // Full Keyboard Input
+    window.addEventListener('keydown', (e) => {
+      if (e.key >= '0' && e.key <= '9') appendChar(e.key);
+      else if (e.key === '.') appendChar('.');
+      else if (e.key === '+') appendOp('+');
+      else if (e.key === '-') appendOp('-');
+      else if (e.key === '*') appendOp('×');
+      else if (e.key === '/') { e.preventDefault(); appendOp('÷'); }
+      else if (e.key === '^') appendOp('^');
+      else if (e.key === '%') appendOp('%');
+      else if (e.key === '(' || e.key === ')') appendChar(e.key);
+      else if (e.key === 'Enter' || e.key === '=') { e.preventDefault(); calculate(); }
+      else if (e.key === 'Backspace') backspace();
+      else if (e.key === 'Escape') clearAll();
+    });
+
+    renderKeypad();
+    renderHistory();
+  </script>
+</body>
+</html>

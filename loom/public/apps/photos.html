@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Loom Photo Gallery</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #090a0f;
+      color: #e2e8f0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      user-select: none;
+    }
+    .top-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 14px;
+      background: rgba(0, 0, 0, 0.35);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      z-index: 10;
+    }
+    .btn-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #cbd5e1;
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.15s;
+    }
+    .btn:hover { background: rgba(255, 255, 255, 0.15); color: #fff; }
+    .btn.active { background: #8b5cf6; border-color: #7c3aed; color: #fff; }
+
+    .main-viewport {
+      flex: 1;
+      display: flex;
+      position: relative;
+      overflow: hidden;
+      background: radial-gradient(circle at center, #111420 0%, #07080d 100%);
+      align-items: center;
+      justify-content: center;
+    }
+    .image-stage {
+      transition: transform 0.2s ease-out;
+      transform-origin: center center;
+      max-width: 90%;
+      max-height: 90%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .image-stage img, .image-stage svg {
+      max-width: 100%;
+      max-height: 100%;
+      border-radius: 6px;
+      box-shadow: 0 20px 35px -10px rgba(0, 0, 0, 0.8);
+      object-fit: contain;
+    }
+
+    /* Floating Navigation Chevrons */
+    .nav-arrow {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: rgba(0, 0, 0, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 18px;
+      transition: all 0.2s;
+      z-index: 10;
+    }
+    .nav-arrow:hover { background: rgba(139, 92, 246, 0.6); transform: translateY(-50%) scale(1.1); }
+    .nav-arrow.left { left: 14px; }
+    .nav-arrow.right { right: 14px; }
+
+    /* Metadata Info Overlay */
+    .info-overlay {
+      position: absolute;
+      bottom: 74px;
+      left: 14px;
+      background: rgba(15, 18, 28, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(8px);
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 11px;
+      display: none;
+      flex-direction: column;
+      gap: 2px;
+      z-index: 20;
+    }
+
+    /* Thumbnail Strip */
+    .filmstrip {
+      height: 64px;
+      background: rgba(0, 0, 0, 0.4);
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      align-items: center;
+      padding: 0 12px;
+      gap: 8px;
+      overflow-x: auto;
+      z-index: 10;
+    }
+    .thumb {
+      width: 48px;
+      height: 48px;
+      border-radius: 6px;
+      border: 2px solid transparent;
+      cursor: pointer;
+      overflow: hidden;
+      flex-shrink: 0;
+      opacity: 0.6;
+      transition: all 0.2s;
+      background: #181b26;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .thumb img, .thumb svg { width: 100%; height: 100%; object-fit: cover; }
+    .thumb:hover { opacity: 0.9; }
+    .thumb.active { opacity: 1; border-color: #8b5cf6; transform: scale(1.06); }
+  </style>
+</head>
+<body>
+  <div class="top-toolbar">
+    <div class="btn-group">
+      <button class="btn" onclick="zoomIn()" title="Zoom In">🔍 +</button>
+      <button class="btn" onclick="zoomOut()" title="Zoom Out">🔍 -</button>
+      <button class="btn" onclick="resetZoom()" title="Reset Zoom">↺ 100%</button>
+      <button class="btn" onclick="rotate(-90)" title="Rotate Counter-Clockwise">⟲</button>
+      <button class="btn" onclick="rotate(90)" title="Rotate Clockwise">⟳</button>
+    </div>
+
+    <div style="font-size: 12px; font-weight: 600; color: #fff;" id="photoTitle">Photo 1 of 4</div>
+
+    <div class="btn-group">
+      <button class="btn" id="btnSlideshow" onclick="toggleSlideshow()">▶ Slideshow</button>
+      <button class="btn" onclick="toggleInfo()">ℹ️ Info</button>
+      <label class="btn" style="cursor: pointer;">
+        + Import
+        <input type="file" accept="image/*" style="display:none;" onchange="importLocalImage(event)">
+      </label>
+    </div>
+  </div>
+
+  <div class="main-viewport">
+    <button class="nav-arrow left" onclick="prevPhoto()">‹</button>
+    
+    <div class="image-stage" id="imageStage">
+      <img id="mainImage" src="" alt="Loom Photo View">
+    </div>
+
+    <button class="nav-arrow right" onclick="nextPhoto()">›</button>
+
+    <div class="info-overlay" id="infoOverlay">
+      <div style="font-weight:600; color:#fff;" id="infoName">photo.jpg</div>
+      <div style="color:#94a3b8;" id="infoDim">1920 × 1080 px</div>
+      <div style="color:#94a3b8;" id="infoType">image/jpeg</div>
+    </div>
+  </div>
+
+  <div class="filmstrip" id="filmstrip"></div>
+
+  <script src="/apps/loom-sdk.js"></script>
+  <script>
+    // Bundled sample high-res SVG & generative images
+    let photos = [
+      {
+        id: 'p1',
+        title: 'Alpine Dusk',
+        src: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500"><rect width="100%" height="100%" fill="%230e1322"/><polygon points="0,500 250,220 500,500" fill="%231a2238"/><polygon points="300,500 550,160 800,500" fill="%23242e4c"/><circle cx="400" cy="180" r="80" fill="%23ec4899" opacity="0.3"/></svg>',
+        dim: '800 × 500 px',
+        type: 'image/svg+xml'
+      },
+      {
+        id: 'p2',
+        title: 'Cyber Grid Horizon',
+        src: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500"><rect width="100%" height="100%" fill="%23050711"/><circle cx="400" cy="250" r="140" fill="%236366f1" opacity="0.35"/><line x1="0" y1="350" x2="800" y2="350" stroke="%2338bdf8" stroke-width="2"/><line x1="400" y1="350" x2="0" y2="500" stroke="%2338bdf8" stroke-width="1"/><line x1="400" y1="350" x2="800" y2="500" stroke="%2338bdf8" stroke-width="1"/></svg>',
+        dim: '800 × 500 px',
+        type: 'image/svg+xml'
+      },
+      {
+        id: 'p3',
+        title: 'Emerald Forest Mist',
+        src: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500"><rect width="100%" height="100%" fill="%2304130d"/><ellipse cx="400" cy="300" rx="360" ry="180" fill="%23092b1e"/><ellipse cx="200" cy="360" rx="200" ry="120" fill="%23114d36"/><circle cx="580" cy="150" r="40" fill="%2310b981" opacity="0.4"/></svg>',
+        dim: '800 × 500 px',
+        type: 'image/svg+xml'
+      },
+      {
+        id: 'p4',
+        title: 'Cosmic Nebula Core',
+        src: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500"><rect width="100%" height="100%" fill="%230b0512"/><circle cx="350" cy="240" r="160" fill="%238b5cf6" opacity="0.4"/><circle cx="450" cy="260" r="140" fill="%23f43f5e" opacity="0.35"/><circle cx="400" cy="250" r="60" fill="%23ffffff" opacity="0.7"/></svg>',
+        dim: '800 × 500 px',
+        type: 'image/svg+xml'
+      }
+    ];
+
+    let currentIndex = 0;
+    let zoomLevel = 1.0;
+    let rotationDeg = 0;
+    let slideshowInterval = null;
+    let showInfo = false;
+
+    LoomSDK.init().then(() => {
+      loadVfsImages();
+    }).catch(e => {
+      renderCurrentPhoto();
+      renderFilmstrip();
+    });
+
+    async function loadVfsImages() {
+      try {
+        const files = await LoomSDK.vfs.listFiles('/');
+        const imgFiles = (files || []).filter(f => f.name.match(/\.(png|jpg|jpeg|svg|webp|gif)$/i));
+        for (const file of imgFiles) {
+          const content = await LoomSDK.vfs.readFile(file.path);
+          if (content) {
+            photos.push({
+              id: file.id,
+              title: file.name,
+              src: content,
+              dim: 'VFS Image',
+              type: 'image'
+            });
+          }
+        }
+      } catch (e) {}
+      renderCurrentPhoto();
+      renderFilmstrip();
+    }
+
+    function renderCurrentPhoto() {
+      const p = photos[currentIndex];
+      if (!p) return;
+      const img = document.getElementById('mainImage');
+      img.src = p.src;
+      document.getElementById('photoTitle').textContent = `${p.title} (${currentIndex + 1} of ${photos.length})`;
+      document.getElementById('infoName').textContent = p.title;
+      document.getElementById('infoDim').textContent = p.dim;
+      document.getElementById('infoType').textContent = p.type;
+      applyTransform();
+    }
+
+    function renderFilmstrip() {
+      const strip = document.getElementById('filmstrip');
+      strip.innerHTML = photos.map((p, idx) => `
+        <div class="thumb ${idx === currentIndex ? 'active' : ''}" onclick="selectPhoto(${idx})">
+          <img src="${p.src}" alt="${p.title}">
+        </div>
+      `).join('');
+    }
+
+    function applyTransform() {
+      const stage = document.getElementById('imageStage');
+      stage.style.transform = `scale(${zoomLevel}) rotate(${rotationDeg}deg)`;
+    }
+
+    function selectPhoto(idx) {
+      currentIndex = idx;
+      zoomLevel = 1.0;
+      rotationDeg = 0;
+      renderCurrentPhoto();
+      renderFilmstrip();
+    }
+
+    function nextPhoto() {
+      currentIndex = (currentIndex + 1) % photos.length;
+      zoomLevel = 1.0;
+      rotationDeg = 0;
+      renderCurrentPhoto();
+      renderFilmstrip();
+    }
+
+    function prevPhoto() {
+      currentIndex = (currentIndex - 1 + photos.length) % photos.length;
+      zoomLevel = 1.0;
+      rotationDeg = 0;
+      renderCurrentPhoto();
+      renderFilmstrip();
+    }
+
+    function zoomIn() {
+      zoomLevel = Math.min(zoomLevel + 0.25, 3.5);
+      applyTransform();
+    }
+
+    function zoomOut() {
+      zoomLevel = Math.max(zoomLevel - 0.25, 0.5);
+      applyTransform();
+    }
+
+    function resetZoom() {
+      zoomLevel = 1.0;
+      rotationDeg = 0;
+      applyTransform();
+    }
+
+    function rotate(delta) {
+      rotationDeg = (rotationDeg + delta) % 360;
+      applyTransform();
+    }
+
+    function toggleSlideshow() {
+      const btn = document.getElementById('btnSlideshow');
+      if (slideshowInterval) {
+        clearInterval(slideshowInterval);
+        slideshowInterval = null;
+        btn.classList.remove('active');
+        btn.textContent = '▶ Slideshow';
+      } else {
+        btn.classList.add('active');
+        btn.textContent = '⏹ Stop';
+        slideshowInterval = setInterval(nextPhoto, 3000);
+      }
+    }
+
+    function toggleInfo() {
+      showInfo = !showInfo;
+      document.getElementById('infoOverlay').style.display = showInfo ? 'flex' : 'none';
+    }
+
+    function importLocalImage(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = async (evt) => {
+        const dataUri = evt.target.result;
+        const newPhoto = {
+          id: 'p-' + Date.now(),
+          title: file.name,
+          src: dataUri,
+          dim: `${file.size} Bytes`,
+          type: file.type || 'image'
+        };
+        photos.push(newPhoto);
+        currentIndex = photos.length - 1;
+        renderCurrentPhoto();
+        renderFilmstrip();
+
+        // Also write to VFS
+        try {
+          await LoomSDK.vfs.writeFile(`/pictures/${file.name}`, dataUri);
+        } catch (e) {}
+      };
+      reader.readAsDataURL(file);
+    }
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight') nextPhoto();
+      else if (e.key === 'ArrowLeft') prevPhoto();
+      else if (e.key === '+' || e.key === '=') zoomIn();
+      else if (e.key === '-') zoomOut();
+      else if (e.key === '0') resetZoom();
+    });
+
+    renderCurrentPhoto();
+    renderFilmstrip();
+  </script>
+</body>
+</html>

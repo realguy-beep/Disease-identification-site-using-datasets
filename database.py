@@ -1,9 +1,12 @@
-﻿import sqlite3
+import os
+import sqlite3
 import json
 from datetime import datetime, timezone
 from typing import List, Dict, Any
 
 DB_PATH = 'predictions.db'
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_PATH = os.path.join(BASE_DIR, 'predictions.db')
 
 def init_db():
     conn = sqlite3.connect(DB_PATH)

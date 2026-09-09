@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Loom Media Player</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #0a0c14;
+      color: #e2e8f0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      user-select: none;
+    }
+    .player-main {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+    }
+    .visualizer-stage {
+      flex: 1;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at center, #131b2e 0%, #080a12 100%);
+      padding: 20px;
+    }
+    canvas {
+      width: 100%;
+      height: 160px;
+      max-width: 480px;
+      border-radius: 8px;
+    }
+    .track-info-overlay {
+      margin-top: 14px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .track-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #fff;
+    }
+    .track-artist {
+      font-size: 12px;
+      color: #94a3b8;
+    }
+
+    /* Video element (hidden by default unless video track loaded) */
+    video {
+      max-width: 100%;
+      max-height: 200px;
+      border-radius: 8px;
+      display: none;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.7);
+    }
+
+    /* Playlist sidebar */
+    .playlist-sidebar {
+      width: 200px;
+      border-left: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(0, 0, 0, 0.3);
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      overflow-y: auto;
+    }
+    .playlist-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: #64748b;
+      letter-spacing: 0.05em;
+    }
+    .playlist-item {
+      padding: 8px 10px;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.03);
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      transition: all 0.15s;
+    }
+    .playlist-item:hover { background: rgba(255, 255, 255, 0.08); }
+    .playlist-item.active {
+      background: rgba(16, 185, 129, 0.15);
+      border-left: 3px solid #10b981;
+    }
+    .item-title { font-size: 12px; font-weight: 600; color: #f1f5f9; }
+    .item-dur { font-size: 10px; color: #64748b; font-family: monospace; }
+
+    /* Control bar */
+    .controls-bar {
+      padding: 12px 18px;
+      background: #0e111d;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .scrubber-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 11px;
+      font-family: monospace;
+      color: #94a3b8;
+    }
+    .scrubber {
+      flex: 1;
+      height: 5px;
+      accent-color: #10b981;
+      cursor: pointer;
+    }
+    .actions-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .center-btns {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .ctrl-btn {
+      background: none;
+      border: none;
+      color: #cbd5e1;
+      font-size: 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      transition: all 0.15s;
+    }
+    .ctrl-btn:hover { background: rgba(255, 255, 255, 0.1); color: #fff; }
+    .ctrl-btn.play-main {
+      background: #10b981;
+      color: #fff;
+      font-size: 18px;
+      width: 38px;
+      height: 38px;
+      box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);
+    }
+    .ctrl-btn.play-main:hover { background: #059669; }
+    .ctrl-btn.active { color: #10b981; }
+
+    .volume-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      width: 120px;
+    }
+    .vol-slider {
+      width: 80px;
+      accent-color: #10b981;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="player-main">
+    <!-- Visualizer & Video Canvas -->
+    <div class="visualizer-stage">
+      <video id="videoElement"></video>
+      <canvas id="visualizerCanvas"></canvas>
+
+      <div class="track-info-overlay">
+        <div class="track-title" id="nowPlayingTitle">Ambient Drift (Procedural)</div>
+        <div class="track-artist" id="nowPlayingArtist">Loom Synthesizer Core</div>
+      </div>
+    </div>
+
+    <!-- Playlist -->
+    <div class="playlist-sidebar">
+      <div class="playlist-header">
+        <span>Playlist</span>
+        <label style="cursor: pointer; color: #10b981; font-size: 11px;">
+          + Add
+          <input type="file" accept="audio/*,video/*" style="display:none;" onchange="importLocalMedia(event)">
+        </label>
+      </div>
+      <div id="playlistContainer" style="display: flex; flex-direction: column; gap: 4px;"></div>
+    </div>
+  </div>
+
+  <!-- Bottom Player Controls -->
+  <div class="controls-bar">
+    <div class="scrubber-row">
+      <span id="currentTimeLabel">00:00</span>
+      <input type="range" id="scrubber" class="scrubber" min="0" max="100" value="0" oninput="seekTrack(this.value)">
+      <span id="totalTimeLabel">03:20</span>
+    </div>
+
+    <div class="actions-row">
+      <div style="font-size:11px; color:#64748b; font-family:monospace;" id="audioEngineMode">WebAudio Synth</div>
+
+      <div class="center-btns">
+        <button class="ctrl-btn" onclick="toggleShuffle()" id="btnShuffle" title="Shuffle">🔀</button>
+        <button class="ctrl-btn" onclick="prevTrack()" title="Previous">⏮</button>
+        <button class="ctrl-btn play-main" id="btnPlayPause" onclick="togglePlay()">▶</button>
+        <button class="ctrl-btn" onclick="nextTrack()" title="Next">⏭</button>
+        <button class="ctrl-btn" onclick="toggleLoop()" id="btnLoop" title="Repeat">🔁</button>
+      </div>
+
+      <div class="volume-row">
+        <span style="font-size: 13px;">🔊</span>
+        <input type="range" class="vol-slider" min="0" max="1" step="0.05" value="0.75" oninput="setVolume(this.value)">
+      </div>
+    </div>
+  </div>
+
+  <script src="/apps/loom-sdk.js"></script>
+  <script>
+    let playlist = [
+      { id: 't1', title: 'Solar Pulse (Lo-fi Chords)', artist: 'Web Audio Ambient', duration: 180, isSynth: true, chords: [261.63, 329.63, 392.00, 523.25] },
+      { id: 't2', title: 'Midnight Rain (Subtle Resonance)', artist: 'Generative Soundscape', duration: 240, isSynth: true, chords: [220.00, 277.18, 329.63, 440.00] },
+      { id: 't3', title: 'Aurora Borealis (Chillwave)', artist: 'Loom Procedural Core', duration: 210, isSynth: true, chords: [174.61, 220.00, 261.63, 349.23] }
+    ];
+
+    let currentTrackIdx = 0;
+    let isPlaying = false;
+    let isShuffle = false;
+    let isLoop = false;
+    let currentSeconds = 0;
+    let trackTimer = null;
+
+    // Web Audio Synthesizer & Analyser Nodes
+    let audioCtx = null;
+    let analyser = null;
+    let synthGain = null;
+    let synthOscs = [];
+    let canvas = document.getElementById('visualizerCanvas');
+    let canvasCtx = canvas.getContext('2d');
+    let animFrame = null;
+
+    function initAudioContext() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        analyser = audioCtx.createAnalyser();
+        analyser.fftSize = 64;
+        synthGain = audioCtx.createGain();
+        synthGain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+        synthGain.connect(analyser);
+        analyser.connect(audioCtx.destination);
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+
+    function renderPlaylist() {
+      const container = document.getElementById('playlistContainer');
+      container.innerHTML = playlist.map((t, idx) => `
+        <div class="playlist-item ${idx === currentTrackIdx ? 'active' : ''}" onclick="selectTrack(${idx})">
+          <div class="item-title">${t.title}</div>
+          <div class="item-dur">${formatTime(t.duration)} • ${t.artist}</div>
+        </div>
+      `).join('');
+    }
+
+    function selectTrack(idx) {
+      currentTrackIdx = idx;
+      currentSeconds = 0;
+      renderPlaylist();
+      loadTrack();
+      if (isPlaying) {
+        startAudio();
+      }
+    }
+
+    function loadTrack() {
+      const t = playlist[currentTrackIdx];
+      document.getElementById('nowPlayingTitle').textContent = t.title;
+      document.getElementById('nowPlayingArtist').textContent = t.artist;
+      document.getElementById('totalTimeLabel').textContent = formatTime(t.duration);
+      document.getElementById('scrubber').value = 0;
+      document.getElementById('currentTimeLabel').textContent = '00:00';
+    }
+
+    function togglePlay() {
+      initAudioContext();
+      if (isPlaying) {
+        pauseAudio();
+      } else {
+        startAudio();
+      }
+    }
+
+    function startAudio() {
+      isPlaying = true;
+      document.getElementById('btnPlayPause').textContent = '⏸';
+      startSynthChords();
+      clearInterval(trackTimer);
+      trackTimer = setInterval(() => {
+        currentSeconds++;
+        const t = playlist[currentTrackIdx];
+        if (currentSeconds >= t.duration) {
+          if (isLoop) {
+            currentSeconds = 0;
+          } else {
+            nextTrack();
+            return;
+          }
+        }
+        document.getElementById('currentTimeLabel').textContent = formatTime(currentSeconds);
+        document.getElementById('scrubber').value = (currentSeconds / t.duration) * 100;
+      }, 1000);
+
+      drawVisualizer();
+    }
+
+    function pauseAudio() {
+      isPlaying = false;
+      document.getElementById('btnPlayPause').textContent = '▶';
+      stopSynthChords();
+      clearInterval(trackTimer);
+    }
+
+    function startSynthChords() {
+      stopSynthChords();
+      if (!audioCtx) return;
+
+      const track = playlist[currentTrackIdx];
+      const freqs = track.chords || [261.63, 329.63, 392.00];
+
+      synthOscs = freqs.map(f => {
+        const osc = audioCtx.createOscillator();
+        const chordGain = audioCtx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(f, audioCtx.currentTime);
+        chordGain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+        osc.connect(chordGain);
+        chordGain.connect(synthGain);
+        osc.start();
+        return osc;
+      });
+    }
+
+    function stopSynthChords() {
+      synthOscs.forEach(o => {
+        try { o.stop(); o.disconnect(); } catch (e) {}
+      });
+      synthOscs = [];
+    }
+
+    function nextTrack() {
+      if (isShuffle) {
+        currentTrackIdx = Math.floor(Math.random() * playlist.length);
+      } else {
+        currentTrackIdx = (currentTrackIdx + 1) % playlist.length;
+      }
+      selectTrack(currentTrackIdx);
+      if (isPlaying) startAudio();
+    }
+
+    function prevTrack() {
+      currentTrackIdx = (currentTrackIdx - 1 + playlist.length) % playlist.length;
+      selectTrack(currentTrackIdx);
+      if (isPlaying) startAudio();
+    }
+
+    function toggleShuffle() {
+      isShuffle = !isShuffle;
+      document.getElementById('btnShuffle').classList.toggle('active', isShuffle);
+    }
+
+    function toggleLoop() {
+      isLoop = !isLoop;
+      document.getElementById('btnLoop').classList.toggle('active', isLoop);
+    }
+
+    function setVolume(v) {
+      if (synthGain && audioCtx) {
+        synthGain.gain.setValueAtTime(parseFloat(v), audioCtx.currentTime);
+      }
+    }
+
+    function seekTrack(percent) {
+      const t = playlist[currentTrackIdx];
+      currentSeconds = Math.floor((percent / 100) * t.duration);
+      document.getElementById('currentTimeLabel').textContent = formatTime(currentSeconds);
+    }
+
+    function formatTime(s) {
+      const m = Math.floor(s / 60);
+      const sec = s % 60;
+      return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+    }
+
+    // HTML5 Canvas Audio Waveform / Visualizer
+    function drawVisualizer() {
+      if (!isPlaying) {
+        canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
+        return;
+      }
+
+      animFrame = requestAnimationFrame(drawVisualizer);
+      const bufferLength = analyser.frequencyBinCount;
+      const dataArray = new Uint8Array(bufferLength);
+      analyser.getByteFrequencyData(dataArray);
+
+      canvas.width = canvas.clientWidth;
+      canvas.height = canvas.clientHeight;
+      canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
+
+      const barWidth = (canvas.width / bufferLength) * 2;
+      let x = 0;
+
+      for (let i = 0; i < bufferLength; i++) {
+        const barHeight = (dataArray[i] / 255) * canvas.height * 0.85;
+
+        const grad = canvasCtx.createLinearGradient(0, canvas.height, 0, canvas.height - barHeight);
+        grad.addColorStop(0, '#10b981');
+        grad.addColorStop(1, '#38bdf8');
+
+        canvasCtx.fillStyle = grad;
+        canvasCtx.fillRect(x, canvas.height - barHeight, barWidth - 2, barHeight);
+
+        x += barWidth;
+      }
+    }
+
+    function importLocalMedia(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const newTrack = {
+        id: 'user-' + Date.now(),
+        title: file.name,
+        artist: 'Local Media',
+        duration: 200,
+        isSynth: true,
+        chords: [293.66, 369.99, 440.00]
+      };
+      playlist.push(newTrack);
+      renderPlaylist();
+      selectTrack(playlist.length - 1);
+    }
+
+    renderPlaylist();
+    loadTrack();
+  </script>
+</body>
+</html>

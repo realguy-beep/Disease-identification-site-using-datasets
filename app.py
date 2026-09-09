@@ -17,6 +17,9 @@ import database
 database.init_db()
 
 MODEL_PATH = "model/disease_model.pkl"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+MODEL_PATH = os.path.join(BASE_DIR, "model", "disease_model.pkl")
 with open(MODEL_PATH, "rb") as f:
     model_bundle = pickle.load(f)
 
@@ -27,12 +30,14 @@ symptoms_meta = model_bundle["symptoms_meta"]
 disease_classes = model_bundle["classes"]
 
 SPEC_MODEL_PATH = "model/specialized_models.pkl"
+SPEC_MODEL_PATH = os.path.join(BASE_DIR, "model", "specialized_models.pkl")
 spec_bundle = None
 if os.path.exists(SPEC_MODEL_PATH):
     with open(SPEC_MODEL_PATH, "rb") as f:
         spec_bundle = pickle.load(f)
 
 EYE_MODEL_PATH = "model/eye_vision_model.pkl"
+EYE_MODEL_PATH = os.path.join(BASE_DIR, "model", "eye_vision_model.pkl")
 eye_bundle = None
 if os.path.exists(EYE_MODEL_PATH):
     with open(EYE_MODEL_PATH, "rb") as f:
@@ -46,6 +51,8 @@ def normalize_symptom_key(s: str) -> str:
 SYMPTOM_LABEL_MAP = {s["key"]: s["label"] for s in symptoms_meta}
 
 training_df = pd.read_csv("data/Training.csv")
+TRAINING_DATA_PATH = os.path.join(BASE_DIR, "data", "Training.csv")
+training_df = pd.read_csv(TRAINING_DATA_PATH)
 if 'Unnamed: 133' in training_df.columns:
     training_df = training_df.drop(columns=['Unnamed: 133'])
 raw_cols = [c for c in training_df.columns if c != 'prognosis']
@@ -286,10 +293,14 @@ app = FastAPI(
     version="2.1.0"
 )
 
+allowed_origins_env = os.environ.get("ALLOWED_ORIGINS")
+allow_credentials = bool(allowed_origins_env)
+allowed_origins = [o.strip() for o in allowed_origins_env.split(",") if o.strip()] if allowed_origins_env else ["*"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
+    allow_origins=allowed_origins,
+    allow_credentials=allow_credentials,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -667,15 +678,19 @@ def get_logs(limit: int = Query(default=15, ge=1, le=100)):
     return {"logs": database.get_recent_logs(limit)}
 
 os.makedirs("frontend", exist_ok=True)
-app.mount("/static", StaticFiles(directory="frontend"), name="static")
+FRONTEND_DIR = os.path.join(BASE_DIR, "frontend")
+os.makedirs(FRONTEND_DIR, exist_ok=True)
+app.mount("/static", StaticFiles(directory=FRONTEND_DIR), name="static")
 
 @app.get("/")
 def serve_index():
     index_path = os.path.join("frontend", "index.html")
+    index_path = os.path.join(FRONTEND_DIR, "index.html")
     if os.path.exists(index_path):
         return FileResponse(index_path)
     return {"message": "Frontend index.html ready."}
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=False)
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run("app:app", host="0.0.0.0", port=port, reload=False)

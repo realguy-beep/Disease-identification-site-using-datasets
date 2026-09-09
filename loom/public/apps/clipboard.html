@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Clipboard Vault</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #0d0f18;
+      color: #e2e8f0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      padding: 14px;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .top-action {
+      display: flex;
+      gap: 8px;
+    }
+    input {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      color: #fff;
+      font-size: 13px;
+      padding: 8px 12px;
+      flex: 1;
+      outline: none;
+    }
+    input:focus { border-color: #10b981; }
+    .btn {
+      background: #10b981;
+      color: #0f172a;
+      border: none;
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.2s;
+      white-space: nowrap;
+    }
+    .btn:hover { background: #059669; color: #fff; }
+    .btn.secondary {
+      background: rgba(255, 255, 255, 0.08);
+      color: #cbd5e1;
+    }
+    .btn.secondary:hover { background: rgba(255, 255, 255, 0.15); color: #fff; }
+    .list-container {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .clip-card {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+    .clip-card:hover {
+      background: rgba(255, 255, 255, 0.06);
+      border-color: rgba(16, 185, 129, 0.3);
+    }
+    .clip-text {
+      font-size: 12.5px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      color: #f1f5f9;
+      word-break: break-all;
+      white-space: pre-wrap;
+      max-height: 70px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .clip-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      color: #64748b;
+    }
+    .clip-actions {
+      display: flex;
+      gap: 6px;
+    }
+    .mini-btn {
+      background: rgba(255, 255, 255, 0.08);
+      color: #cbd5e1;
+      border: none;
+      border-radius: 4px;
+      padding: 3px 8px;
+      font-size: 10.5px;
+      cursor: pointer;
+    }
+    .mini-btn:hover { background: #10b981; color: #0f172a; }
+    .status-bar {
+      font-size: 11px;
+      color: #64748b;
+      display: flex;
+      justify-content: space-between;
+    }
+  </style>
+</head>
+<body>
+  <div class="top-action">
+    <input type="text" id="customInput" placeholder="Quick snippet or paste here...">
+    <button class="btn" id="btnAddClip">+ Add</button>
+    <button class="btn secondary" id="btnSyncClip">Read OS Clip</button>
+  </div>
+
+  <div class="list-container" id="clipList">
+    <!-- Snippet items loaded dynamically -->
+  </div>
+
+  <div class="status-bar">
+    <span id="statusMessage">Sandboxed RPC active</span>
+    <span id="clipCount">0 items</span>
+  </div>
+
+  <script src="/apps/loom-sdk.js"></script>
+  <script>
+    const customInput = document.getElementById('customInput');
+    const btnAddClip = document.getElementById('btnAddClip');
+    const btnSyncClip = document.getElementById('btnSyncClip');
+    const clipList = document.getElementById('clipList');
+    const statusMessage = document.getElementById('statusMessage');
+    const clipCount = document.getElementById('clipCount');
+
+    let history = [];
+
+    LoomSDK.init().then(info => {
+      statusMessage.textContent = 'Connected (Capabilities: ' + info.permissions.join(', ') + ')';
+      loadHistory();
+    }).catch(e => {
+      statusMessage.textContent = 'Err: ' + e.message;
+    });
+
+    async function loadHistory() {
+      try {
+        const stored = await LoomSDK.storage.get('clip_history');
+        if (Array.isArray(stored)) {
+          history = stored;
+        } else {
+          // Pre-populate with default helpful snippets
+          history = [
+            { text: 'git commit -m "feat(os): introduce adaptive context zones"', time: Date.now() - 400000 },
+            { text: 'npm run dev -- --host 0.0.0.0', time: Date.now() - 800000 },
+            { text: 'sandbox="allow-scripts allow-forms"', time: Date.now() - 1200000 }
+          ];
+          await saveHistory();
+        }
+        render();
+      } catch (e) {
+        statusMessage.textContent = 'Load error: ' + e.message;
+      }
+    }
+
+    async function saveHistory() {
+      await LoomSDK.storage.set('clip_history', history);
+    }
+
+    function render() {
+      clipList.innerHTML = '';
+      clipCount.textContent = `${history.length} items`;
+
+      if (history.length === 0) {
+        clipList.innerHTML = '<div style="color: #64748b; font-size: 13px; text-align: center; margin-top: 20px;">No clipboard snippets yet</div>';
+        return;
+      }
+
+      history.forEach((item, index) => {
+        const card = document.createElement('div');
+        card.className = 'clip-card';
+
+        const textDiv = document.createElement('div');
+        textDiv.className = 'clip-text';
+        textDiv.textContent = item.text;
+
+        const footer = document.createElement('div');
+        footer.className = 'clip-footer';
+        footer.innerHTML = `<span>${new Date(item.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>`;
+
+        const actions = document.createElement('div');
+        actions.className = 'clip-actions';
+
+        const copyBtn = document.createElement('button');
+        copyBtn.className = 'mini-btn';
+        copyBtn.textContent = 'Copy';
+        copyBtn.onclick = async () => {
+          try {
+            await LoomSDK.clipboard.write(item.text);
+            copyBtn.textContent = 'Copied!';
+            setTimeout(() => { copyBtn.textContent = 'Copy'; }, 1500);
+          } catch (e) {
+            statusMessage.textContent = 'Copy failed: ' + e.message;
+          }
+        };
+
+        const delBtn = document.createElement('button');
+        delBtn.className = 'mini-btn';
+        delBtn.textContent = '✕';
+        delBtn.onclick = async () => {
+          history.splice(index, 1);
+          await saveHistory();
+          render();
+        };
+
+        actions.appendChild(copyBtn);
+        actions.appendChild(delBtn);
+        footer.appendChild(actions);
+
+        card.appendChild(textDiv);
+        card.appendChild(footer);
+        clipList.appendChild(card);
+      });
+    }
+
+    btnAddClip.addEventListener('click', async () => {
+      const val = customInput.value.trim();
+      if (!val) return;
+      history.unshift({ text: val, time: Date.now() });
+      customInput.value = '';
+      await saveHistory();
+      render();
+    });
+
+    customInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') btnAddClip.click();
+    });
+
+    btnSyncClip.addEventListener('click', async () => {
+      try {
+        statusMessage.textContent = 'Reading OS clipboard...';
+        const res = await LoomSDK.clipboard.read();
+        if (res && res.text) {
+          history.unshift({ text: res.text, time: Date.now() });
+          await saveHistory();
+          render();
+          statusMessage.textContent = 'Snippet captured from clipboard!';
+        } else {
+          statusMessage.textContent = 'Clipboard is empty or inaccessible';
+        }
+      } catch (err) {
+        statusMessage.textContent = 'RPC Error: ' + err.message;
+      }
+    });
+  </script>
+</body>
+</html>
+
