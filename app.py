@@ -288,9 +288,9 @@ DISEASE_INFO = {
 }
 
 app = FastAPI(
-    title="MediPredict AI Medical Suite",
-    description="Multi-model clinical intelligence suite for multi-class disease diagnosis, specialized risk calculators, eye vision classification, and NLP triage.",
-    version="2.1.0"
+    title="Disease Prediction API",
+    description="API for symptom-based disease prediction, risk scoring, and image classification experiments.",
+    version="1.0.0"
 )
 
 allowed_origins_env = os.environ.get("ALLOWED_ORIGINS")
@@ -582,14 +582,14 @@ async def predict_eye_disease(file: UploadFile = File(...)):
     })
     
     return {
-        "model": "Computer Vision Eye Pathology Classifier",
+        "model": "Eye Image Classifier",
         "primary_prediction": info["display_name"],
         "confidence": round(confidence, 4),
         "confidence_percent": f"{confidence * 100:.1f}%",
         "description": info["description"],
         "precautions": info["precautions"],
         "all_rankings": all_scores,
-        "disclaimer": "Educational image analysis only — not a clinical ophthalmic diagnosis."
+        "disclaimer": "Educational project only. Not intended for clinical diagnosis."
     }
 
 @app.post("/predict/diabetes")
@@ -606,7 +606,7 @@ def predict_diabetes_risk(payload: DiabetesInput):
     prob = float(pipe.predict_proba(data)[0][1])
     risk_level = "High" if prob >= 0.60 else ("Moderate" if prob >= 0.35 else "Low")
     return {
-        "model": "Diabetes Diagnostic Model",
+        "model": "Diabetes Risk Model",
         "probability": round(prob, 4), "probability_percent": f"{prob * 100:.1f}%",
         "risk_level": risk_level,
         "recommendations": [
@@ -615,7 +615,7 @@ def predict_diabetes_risk(payload: DiabetesInput):
             "Engage in at least 150 minutes of moderate aerobic activity weekly",
             "Consult an endocrinologist or primary care physician"
         ],
-        "disclaimer": "Educational tool only — not medical advice."
+        "disclaimer": "Educational project only. Not intended for medical diagnosis."
     }
 
 @app.post("/predict/stroke")
@@ -633,7 +633,7 @@ def predict_stroke_risk(payload: StrokeInput):
     prob = float(pipe.predict_proba(data)[0][1])
     risk_level = "High" if prob >= 0.50 else ("Moderate" if prob >= 0.25 else "Low")
     return {
-        "model": "Stroke Risk Assessment Predictor",
+        "model": "Stroke Risk Model",
         "probability": round(prob, 4), "probability_percent": f"{prob * 100:.1f}%",
         "risk_level": risk_level,
         "recommendations": [
@@ -642,7 +642,7 @@ def predict_stroke_risk(payload: StrokeInput):
             "Quit tobacco smoking immediately",
             "Learn F.A.S.T. stroke signs (Face, Arm, Speech, Time)"
         ],
-        "disclaimer": "Educational tool only — not medical advice."
+        "disclaimer": "Educational project only. Not intended for medical diagnosis."
     }
 
 @app.post("/predict/heart-failure")
@@ -661,7 +661,7 @@ def predict_heart_failure_risk(payload: HeartFailureInput):
     prob = float(pipe.predict_proba(data)[0][1])
     risk_level = "High Risk" if prob >= 0.55 else ("Moderate Risk" if prob >= 0.30 else "Low Risk")
     return {
-        "model": "Heart Failure Clinical Risk & Mortality Predictor",
+        "model": "Heart Failure Risk Model",
         "probability": round(prob, 4), "probability_percent": f"{prob * 100:.1f}%",
         "risk_level": risk_level,
         "recommendations": [
@@ -670,7 +670,7 @@ def predict_heart_failure_risk(payload: HeartFailureInput):
             "Track daily weight and report sudden fluid gains",
             "Take prescribed cardiac medications consistently"
         ],
-        "disclaimer": "Educational tool only — not medical advice."
+        "disclaimer": "Educational project only. Not intended for medical diagnosis."
     }
 
 @app.get("/logs")

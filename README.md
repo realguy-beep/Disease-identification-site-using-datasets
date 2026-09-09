@@ -1,61 +1,118 @@
-﻿# MediPredict AI — Multi-Modal Clinical Intelligence Platform (v2.1)
+# Disease Prediction Project
 
-> **DISCLAIMER: Educational tool only — not medical advice.**
+I built this project for coursework to learn how to train several scikit-learn models and serve them through a FastAPI backend with a simple web interface.
 
-A multi-modal clinical AI web application featuring general multi-class disease prediction (132 symptoms to 41 diseases), Computer Vision ophthalmic pathology analysis, specialized risk calculators (Diabetes, Stroke, Heart Failure), Explainable AI (XAI) feature attribution, natural language intake, dynamic triage questions, emergency red-flag detection, and printable doctor consultation summaries.
+A note on intent: this is an educational programming project, not medical software. The datasets are benchmark or synthetic collections from Kaggle and UCI, so the predictions are just statistical pattern matching and should never be used as medical advice.
 
----
+## What I built
 
-## 🏗️ Multi-Modal AI Engine Matrix
+The application has five core tools accessible from the browser:
 
-| # | Model / Pipeline | Dataset / Modality | Algorithm & Architecture | Key Clinical Focus |
-|---|---|---|---|---|
-| **1** | **General Multi-Class Disease Engine** | Tabular (4,920 records) | Balanced Random Forest (132 Symptoms &rarr; 41 Diseases) | **97.6% Test Accuracy** with XAI & Triage |
-| **2** | **Ophthalmic Computer Vision AI** | Medical Imaging (778 Eye Photos) | Spatial-Color-Texture ExtraTrees Classifier | Cataracts, Glaucoma, Strabismus, Uveitis, Proptosis |
-| **3** | **Diabetes Risk Diagnostic Model** | Tabular (768 records) | Scaler + Random Forest Pipeline | **ROC-AUC: 0.819** |
-| **4** | **Stroke Probability Predictor** | Tabular (5,110 records) | One-Hot Imputer + Random Forest | **ROC-AUC: 0.795** |
-| **5** | **Heart Failure Mortality Model** | Clinical Tabular (299 records) | Scaler + Balanced Random Forest | **ROC-AUC: 0.904 (83.3% Acc)** |
+1. **Choose symptoms (Disease prediction):** Matches selected symptoms against 41 disease classes using a Random Forest classifier trained on 132 binary symptom indicators.
+   - Includes a text parser that extracts recognized symptom keys from free text (for example, typing "headache and fever" checks those boxes).
+   - Shows which selected symptoms contributed most to the top predicted condition.
+   - Suggests follow-up symptoms that often co-occur with top candidates to help clarify ambiguous cases.
+   - Includes a basic rule check for high-risk combinations (like chest pain with breathlessness) that displays an emergency warning.
+2. **Upload an eye image (Eye image classifier):** A small experimental classifier for five eye conditions (cataracts, glaucoma, strabismus, uveitis, and proptosis). Instead of a deep neural network, I extracted basic color and edge features (mean/std per RGB channel, color histograms, and Sobel gradient magnitude) and trained an ExtraTrees classifier on them.
+3. **Diabetes risk:** A Random Forest pipeline with a standard scaler trained on the Pima Indians Diabetes dataset (768 rows, 8 clinical features).
+4. **Stroke risk:** A Random Forest with balanced class weights, imputation, and one-hot encoding trained on the Kaggle stroke dataset (5,110 records).
+5. **Heart failure risk:** A Random Forest pipeline with standard scaling trained on the Heart Failure Clinical Records dataset (299 patient records).
+6. **Recent predictions:** A basic query log backed by SQLite (`predictions.db`) that records the inputs, top prediction, confidence score, and timestamp for each request.
 
----
+## Why I built it
 
-## 🌟 Advanced Clinical Features Added
+I wanted hands-on experience taking multiple tabular and image datasets from preprocessing to deployment:
+- Learning how to set up clean scikit-learn pipelines with `ColumnTransformer`, imputer steps, and scalers.
+- Serializing trained estimators with `pickle` and loading them reliably inside a FastAPI service using relative paths.
+- Building a lightweight single-page frontend with vanilla JavaScript and Tailwind CSS that talks directly to FastAPI endpoints.
+- Packaging the application with Docker and configuring it for deployment on Hugging Face Spaces (port 7860, non-root user).
 
-1. **🗣️ NLP Natural Language Symptom Intake**: Type symptom descriptions in conversational English (e.g. *"I've had severe headache and high fever since yesterday"*); NLP extracts and auto-selects catalog symptoms.
-2. **🔍 Explainable AI (XAI) Feature Drivers**: Explains *why* a disease was predicted (e.g., *"Why Malaria? +34% High Fever, +28% Chills, +18% Sweating"*).
-3. **❓ Dynamic Symptom Follow-Up (Intelligent Triage)**: Evaluates diagnostic ambiguity among top candidate diseases and asks discriminating follow-up questions.
-4. **🚨 Red-Flag Emergency Alert System**: Automatically detects high-acuity life-threatening clusters (e.g., Chest Pain + Dyspnea) with immediate 911 dispatch prompts and first-aid instructions.
-5. **👁️ Computer Vision Eye Scan Upload**: Drag-and-drop anterior eye or fundus scans with immediate differential disease probabilities and guidelines.
-6. **📄 One-Click Printable Doctor Consultation Report**: Cleanly formatted printable medical summary to take to physician consultations.
-7. **📜 SQLite Audit Trail**: Persistent logging of inference requests in `predictions.db`.
+## Implementation details
 
-## Deployment
+- `app.py`: FastAPI server that loads model bundles from `model/` on startup and defines the POST and GET routes. Serves `frontend/index.html` statically on `/`.
+- `database.py`: Helper functions that initialize `predictions.db` and append inference sessions.
+- `train.py`: Data loading, stratified 80/20 train/validation split, and training for the 132-symptom Random Forest model.
+- `train_specialized.py`: Preprocessing pipelines and cross-validation for the diabetes, stroke, and heart failure datasets.
+- `train_vision.py`: Image resizing (96x96), color/gradient feature extraction, and ExtraTrees training on the eye dataset.
+- `test_pipeline.py`: Test script using FastAPI's `TestClient` to verify every endpoint and model output.
+- `frontend/index.html`: Responsive UI built with HTML, Tailwind CSS utility classes, and Lucide icons.
+- `Dockerfile`: Debian slim container with Python 3.10, non-root user 1000, exposing port 7860.
 
-The simplest deployment is a single Docker service. The FastAPI app serves both the API and `frontend/index.html`, so the browser uses the same origin for requests.
+## How to run it locally
 
-### Render
+### Prerequisites
+- Python 3.10 or newer
+- pip
 
-1. Push this repository to GitHub, including the Git LFS model objects.
-2. In Render, choose **New > Blueprint** and select the repository.
-3. Render will detect `render.yaml`, build the Docker image, and use `/health` as the health check.
-4. Open the generated service URL. The frontend and API are deployed together.
-
-No `.env` file should be committed. Render injects `PORT` automatically, and this same-origin deployment does not need a CORS origin. If you later host the frontend separately, set `ALLOWED_ORIGINS` to the exact frontend URL in Render's environment settings.
+### 1. Set up the environment
 
 ```bash
-docker build -t medipredict .
-docker run --rm -p 8000:8000 -e PORT=8000 medipredict
+git clone https://github.com/realguy-beep/Disease-identification-site-using-datasets.git
+cd Disease-identification-site-using-datasets
+
+python -m venv .venv
+# On Linux/macOS:
+source .venv/bin/activate
+# On Windows (PowerShell):
+.\.venv\Scripts\Activate.ps1
 ```
 
-Open `http://localhost:8000` and verify `http://localhost:8000/health`. On a hosting platform, deploy the repository as a Docker service and use the platform-provided `PORT` value. The health check path is `/health`.
+### 2. Install dependencies
 
-If the frontend is deployed separately as static files, set `window.__API_BASE_URL__` before the inline script in `frontend/index.html` to the public backend URL, for example:
-
-```html
-<script>
-	window.__API_BASE_URL__ = "https://api.example.com";
-</script>
+```bash
+pip install -r requirements.txt
 ```
 
-Then configure the backend's `ALLOWED_ORIGINS` environment variable with the exact frontend origin, for example `https://app.example.com`. Do not use a trailing slash in either URL.
+### 3. Start the application
 
-SQLite data is stored in `predictions.db`. On hosts with ephemeral disks, use a persistent volume or replace the audit database with a managed database before relying on prediction history.
+Pre-trained `.pkl` bundles are already in the `model/` directory, so you can run the server directly:
+
+```bash
+uvicorn app:app --host 0.0.0.0 --port 7860
+```
+
+Open `http://localhost:7860` in your browser.
+
+If you prefer to run with a different port:
+```bash
+PORT=8000 uvicorn app:app --host 0.0.0.0 --port 8000
+```
+
+### 4. Run tests
+
+To check that all endpoints and models respond as expected:
+
+```bash
+python test_pipeline.py
+```
+
+### 5. Retraining models (optional)
+
+If you change any training logic or datasets:
+
+```bash
+python train.py
+python train_specialized.py
+python train_vision.py
+```
+
+## Docker
+
+You can also run the app in a container:
+
+```bash
+docker build -t disease-prediction-app .
+docker run --rm -p 7860:7860 disease-prediction-app
+```
+
+The container listens on port 7860 and uses user ID 1000, matching the Hugging Face Spaces Docker SDK requirements.
+
+## Model limitations
+
+Working through this project made several limitations very clear:
+
+1. **The symptom dataset is synthetic and rigid:** The 132-symptom dataset uses clean binary 1/0 flags. Real patients do not experience symptoms as clean binary switches; symptoms vary in severity, onset, and duration.
+2. **Handcrafted vision features are fragile:** The eye classifier uses color and edge histograms rather than a modern convolutional neural network or vision transformer. While it achieves reasonable training accuracy on this specific small set, it fails when tested on images with different lighting, skin tones, or camera angles.
+3. **Class imbalance:** The stroke dataset has an outcome rate of only ~4.9%. Using `class_weight='balanced'` helped the model identify true positives, but it also increases the rate of false alarms on borderline cases.
+4. **Small dataset sizes:** The heart failure dataset contains 299 records, and the diabetes dataset contains 768. Both are prone to variance between train and test splits despite cross-validation.
+5. **Database persistence:** The SQLite database `predictions.db` is stored locally. In container deployments without a persistent volume mount, logs will reset whenever the container restarts.
